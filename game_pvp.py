@@ -67,7 +67,8 @@ class piece(object):
             return
 
         if (board[check_pos].col != self.col 
-            and (check_pos[0]+direction[0], check_pos[1]+direction[1]) not in board.keys()): # if the next space is free and we hit an enemy piece
+            and (check_pos[0]+direction[0], check_pos[1]+direction[1]) not in board.keys()
+            and is_valid((check_pos[0]+direction[0], check_pos[1]+direction[1]))): # if the next space is free and we hit an enemy piece
             self.can_take = True
             self.options.append((check_pos[0]+direction[0], check_pos[1]+direction[1]))
 
