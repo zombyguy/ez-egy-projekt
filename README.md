@@ -4,9 +4,14 @@ Ez egy projekt
 Megj: Valóban, ez egy projekt
 
 
+
+
+
+
+
+
 Zsombornak fontos információ!!!
 
-  Hasznos python megjelenítő:
-  
+  Hasznos python játék megjelenítő: 
   https://www.pygame.org/news
 
