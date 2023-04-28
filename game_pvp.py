@@ -1,7 +1,13 @@
 def startcol(place):
+    '''
+    determines the starting color based on the place (used for initialising the board)
+    '''
     return (place[0]+place[1])%2*(-1) if place[0]>4 else (place[0]+place[1])%2
 
 def is_valid(place):
+    '''
+    checks if the place is on the board
+    '''
     return 0<=place[0]<8 and 0<=place[1]<8
 
 ## pieces for the bot
@@ -359,4 +365,4 @@ class game(object):
         while game_state != 0:
             print(f"Current player: {self.turn}")
             game_state = self.player_turn()
-            
+
