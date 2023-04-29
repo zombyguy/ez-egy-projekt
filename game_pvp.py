@@ -1,13 +1,7 @@
 def startcol(place):
-    '''
-    determines the starting color based on the place (used for initialising the board)
-    '''
     return (place[0]+place[1])%2*(-1) if place[0]>4 else (place[0]+place[1])%2
 
 def is_valid(place):
-    '''
-    checks if the place is on the board
-    '''
     return 0<=place[0]<8 and 0<=place[1]<8
 
 ## pieces for the bot
@@ -57,7 +51,8 @@ class piece(object):
         for opt in self.det_opt.keys():
             self.options.append(opt)
 
-        self.crowned_bonus()
+        self.crowned_bonus() ## gives bonus points for crowning a piece
+        self.game_end_bonus(board)
 
 
     def check_take(self, board, direction, pos, dirs, prev_dir = (9,9)):
@@ -150,7 +145,14 @@ class piece(object):
             if not self.crowned and self.det_opt[newpos][2]: ## in not yet crowned and it gets crowned during moving
                 self.det_opt[newpos][0]+=1 # extra point
 
-
+    def game_end_bonus(self, board):
+        '''
+        gives +100 points to the move that ends the game
+        '''
+        n_enemies = sum([board[key].col!=self.col for key in board.keys()])
+        for newpos in self.options:
+            if len(self.det_opt[newpos][1]) == n_enemies:
+                self.det_opt[newpos][0]+=100
 
 class game(object):
     def __init__(self):
@@ -264,27 +266,19 @@ class game(object):
         +1 for taking a piece
         +2 for taking a queen
         +1 for transforming into a queen
+        +100 for winning the game
         (these values are calculated for each single step while calling the check_take function)
         Then it searches for the best possible answers of the player (who is the opponent of the bot using the algorithm)
         and return the value (maximum points collected by the bot) - (maximum points collected by the player)
 
         depth = 1 means that the player takes one step after the bot
         depth = n means that the player takes n moves and the bot n-1 other moves, because this move counts as the last one
-
-        if the bot wins with a step, the value 100 is returned, it it loses -100 is.
         '''
-
-
         newgame = self.simulate_step(pos, newpos) # the bot took its step, now its the players turn in this simulation
-        if newgame.can_move == []: ## if this is the winning move
+        if newgame.can_move == []: ## if the player cant make another move
             return 100
-
+        
         if depth == 1: ## if this is the last depth layer 
-            for piece in newgame.can_move: ## check every piece of the player
-                for option in newgame.board[piece].options: # and their every move
-                    new_newgame = newgame.simulate_step(piece, option) ## simulate that move
-                    if new_newgame.can_move == []: ## if this the player can beat the bot in their next move
-                        return -100
             return self.board[pos].det_opt[newpos][0] - max(
                 [max([option[0] for option in newgame.board[piece].det_opt.values()]) for piece in newgame.can_move])
             ## this returns the number of pieces taken minus the maximum number of pieces the player can take with their next step
@@ -293,9 +287,9 @@ class game(object):
         for piece in newgame.can_move: ## check every piece of the player
             for option in newgame.board[piece].options: # and their every move
                 new_newgame = newgame.simulate_step(piece, option) ## simulate that move
+                best = -1000 # the best score the bot can achieve in this situation (this value is maximized)
                 if new_newgame.can_move == []: ## if this the player can beat the bot in their next move
                     return -100
-                best = -1000 # the best score the bot can achieve in this situation (this value is maximized)
                 for pos2 in new_newgame.can_move: ## check the bots every piece to move
                     for newpos2 in new_newgame.board[pos2].options: # and their every option
                         best = max(best, new_newgame.evaluate_step(pos2, newpos2, depth-1))
@@ -331,7 +325,7 @@ class game(object):
 
         print(self)
         print('---')
-        while True: # cycle ensuring that the player takes multiple times if needed
+        while True: # cycle ensuring that the player can retry their input
             while pos not in self.can_move:
                 print(f"pieces to move: {self.can_move}")
                 pos = tuple(int(i) for i in input()) ## currently takes input as a two digit number: e.g. 03 for (0,3)
@@ -360,9 +354,27 @@ class game(object):
 
         return 1
 
+    def bot_turn(self):
+        pos = '*'
+        if len(self.can_move) == 0:
+            print(f"GAME OVER \n {self.turn*(-1)} WINS")
+            print(self)
+            return 0
+
+        print(self)
+        print('---')
+
+        pos, newpos = self.find_best_step(2)
+
+        print(pos, newpos)
+
+        self.step(pos, newpos) # the player takes their step
+        return 1
+
     def game_start(self):
         game_state = 1
+        self.update_all()
         while game_state != 0:
             print(f"Current player: {self.turn}")
-            game_state = self.player_turn()
-
+            game_state = self.bot_turn()
+            
