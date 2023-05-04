@@ -360,21 +360,41 @@ class game(object):
             print(f"GAME OVER \n {self.turn*(-1)} WINS")
             print(self)
             return 0
-
-        print(self)
-        print('---')
-
+        # print(self)
+        # print('---')
         pos, newpos = self.find_best_step(2)
-
-        print(pos, newpos)
-
+        # print(pos, newpos)
         self.step(pos, newpos) # the player takes their step
         return 1
 
-    def game_start(self):
+    def game_start_pvp(self): ## player vs player game
+        game_state = 1
+        self.update_all()
+        while game_state != 0:
+            print(f"Current player: {self.turn}")
+            game_state = self.player_turn()
+
+    def game_start_pvb(self): ## player vs bot game
+        game_state = 1
+        self.update_all()
+        while game_state != 0:
+            print(f"Current player: {self.turn}")
+            if self.turn == 1:
+                game_state = self.player_turn()
+            if self.turn == -1:
+                game_state = self.bot_turn()
+
+    def game_start_bvb(self): ## bot vs bot game ## toggle the prints in self.bot_turn() to spectate
         game_state = 1
         self.update_all()
         while game_state != 0:
             print(f"Current player: {self.turn}")
             game_state = self.bot_turn()
             
+            
+a = game()
+a.update_all()
+# a.import_boardstate(custom_state, -1)
+# print(a)
+# a.find_best_step(3)
+a.game_start_pvb()      
