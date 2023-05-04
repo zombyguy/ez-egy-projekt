@@ -1,3 +1,5 @@
+from checkers_graphics import *
+
 def startcol(place):
     return (place[0]+place[1])%2*(-1) if place[0]>4 else (place[0]+place[1])%2
 
@@ -6,13 +8,24 @@ def is_valid(place):
 
 ## pieces for the bot
 class piece(object):
-    def __init__(self, pos, col, crowned = False):
+    def __init__(self, GFX, pos, col, crowned = False):
         self.col = col # color
         self.options = [] # available positions to move to
         self.det_opt = dict() # detailed options: {newpos:[#pieces took, [pieces took], got_crowned]}
         self.crowned = crowned # if the piece is crowned
         self.can_take = False # can the piece take
         self.pos = pos # current position
+
+        self.GFX = GFX
+        self.gfx = PieceGFX(
+            self.pos,
+            True if col == 1 else False,
+            self.crowned,
+            GFX
+        )
+
+    def __del__(self):
+        self.gfx.remove(self.GFX)
 
     def __str__(self):
         if not self.crowned:
@@ -156,7 +169,8 @@ class piece(object):
 
 class game(object):
     def __init__(self):
-        self.board = {pos: piece(pos, startcol(pos))
+        self.GFX = CheckersGraphics()
+        self.board = {pos: piece(self.GFX, pos, startcol(pos))
                        for pos in [(i,j) for i in range(8) for j in range(8) if (i+j)%2==1 and (i<3 or i>4)]}
         self.turn = 1
         self.can_move = []
@@ -206,7 +220,7 @@ class game(object):
         for i in range(8):
             for j in range(8):
                 if board[i][j] != 0:
-                    self.board[(i,j)] = piece((i,j), int(abs(board[i][j])/board[i][j]), abs(board[i][j])>1)
+                    self.board[(i,j)] = piece(self.GFX, (i,j), int(abs(board[i][j])/board[i][j]), abs(board[i][j])>1)
 
         self.update_all()
 
@@ -368,6 +382,9 @@ class game(object):
 
         print(pos, newpos)
 
+        pc = self.board[pos].gfx
+        motion = GFXMotion(pc, pos, newpos)
+        self.GFX.motion_cue.append(motion)
         self.step(pos, newpos) # the player takes their step
         return 1
 
