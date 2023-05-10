@@ -17,15 +17,15 @@ class piece(object):
         self.pos = pos # current position
 
         self.GFX = GFX
-        self.gfx = PieceGFX(
+        self.piece_gfx = PieceGFX(
             self.pos,
             True if col == 1 else False,
             self.crowned,
             GFX
         )
 
-    def __del__(self):
-        self.gfx.remove(self.GFX)
+    # def __del__(self):
+    #     self.piece_gfx.remove_from(self.GFX)
 
     def __str__(self):
         if not self.crowned:
@@ -248,6 +248,7 @@ class game(object):
 
             if self.board[pos].det_opt[newpos][2]: # crown if last row reached
                 self.board[pos].crowned = True
+                self.board[pos].piece_gfx.crowned = True
             self.board[newpos] = self.board[pos] ### we move our piece in these 3 steps:
             self.board[newpos].pos = newpos###
             del self.board[pos]###
@@ -260,6 +261,7 @@ class game(object):
             del self.board[pos]###
             if (newpos[0] == 7 and self.board[newpos].col == 1) or (newpos[0] == 0 and self.board[newpos].col == -1): # crown if last row reached
                 self.board[newpos].crowned = True
+                self.board[newpos].piece_gfx.crowned = True
         self.turn = self.turn*(-1)
         self.update_all()
 
@@ -381,10 +383,23 @@ class game(object):
         pos, newpos = self.find_best_step(2)
 
         print(pos, newpos)
+        print(self.board[pos].det_opt[newpos])
 
-        pc = self.board[pos].gfx
-        motion = GFXMotion(pc, pos, newpos)
-        self.GFX.motion_cue.append(motion)
+        piece_gfx = self.board[pos].piece_gfx
+        if (self.board[pos].det_opt[newpos][0] == 0 or 
+                    self.board[pos].det_opt[newpos][2]):
+            motion = GFXMotion(piece_gfx, pos, newpos)
+            self.GFX.motion_cue.append(motion)
+        else:
+            temp_pos = pos
+            for captured_pos in self.board[pos].det_opt[newpos][1][::-1]:
+                temp_newpos = (2*captured_pos[0] - temp_pos[0],
+                               2*captured_pos[1] - temp_pos[1])
+                self.GFX.destroy_cue.append(self.board[captured_pos].piece_gfx)
+                motion = GFXMotion(piece_gfx, temp_pos, temp_newpos)
+                self.GFX.motion_cue.append(motion)
+                temp_pos = temp_newpos
+
         self.step(pos, newpos) # the player takes their step
         return 1
 
