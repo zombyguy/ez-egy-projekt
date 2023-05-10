@@ -1,3 +1,5 @@
+from random import randint
+
 def startcol(place):
     return (place[0]+place[1])%2*(-1) if place[0]>4 else (place[0]+place[1])%2
 
@@ -6,11 +8,12 @@ def is_valid(pos, board, start): ## a place is valid if its not occupied or off 
         return 0<=pos[0]<8 and 0<=pos[1]<8
     return False
 
+## pieces for the bot
 class Piece():
     def __init__(self, pos, col, crowned = False):
         self.col = col # color
         self.options = [] # available positions to move to
-        self.det_opt = dict() # detailed options: {newpos:[#pieces took, [pieces took], got_crowned]}
+        self.det_opt = dict() # detailed options: {newpos:[value*, [pieces took], got_crowned, [path]]} * = #pieces took + I_{just got crowned} + 100*I_{won the game}
         self.crowned = crowned # if the piece is crowned
         self.can_take = False # can the piece take
         self.pos = pos # current position
@@ -84,7 +87,7 @@ class Piece():
                     dirs = [(1,1),(1,-1),(-1,1),(-1,-1)]
 
                 if not self.can_take_more(board, newpos, dirs, start, already_taken_new): ## if the piece cant take more
-                    self.det_opt[newpos] = [1, [(newpos[0]-direction[0], newpos[1]-direction[1])], False] ## this is the last piece we will take
+                    self.det_opt[newpos] = [1, [(newpos[0]-direction[0], newpos[1]-direction[1])], False, [newpos]] ## this is the last piece we will take
                     if board[(newpos[0]-direction[0], newpos[1]-direction[1])].crowned: # extra point if the taken piece was crowned
                         self.det_opt[newpos][0]+=1
                         
@@ -97,7 +100,8 @@ class Piece():
                         dir_finals = self.check_take(board, next_dir, newpos, dirs, start, already_taken_new) # ending positions in this direction
                         for fin in dir_finals:
                             self.det_opt[fin][0]+=1 ## adds 1 to the number of pieces that will be taken if we go to this pos
-                            self.det_opt[fin][1].append((newpos[0]-direction[0], newpos[1]-direction[1]))## expands the list on how to reach it
+                            self.det_opt[fin][3].append(newpos)## expands the list of visited places
+                            self.det_opt[fin][1].append((newpos[0]-direction[0], newpos[1]-direction[1]))## expands the list of the taken pieces
                             if board[(newpos[0]-direction[0], newpos[1]-direction[1])].crowned: # extra point if the taken piece was crowned
                                 self.det_opt[fin][0]+=1
 
@@ -155,7 +159,6 @@ class Piece():
         for newpos in self.options:
             if len(self.det_opt[newpos][1]) == n_enemies:
                 self.det_opt[newpos][0]+=100
-
 
 class game():
     def __init__(self):
@@ -304,18 +307,27 @@ class game():
 
     def find_best_step(self, depth):
         '''
+        in: depth: how far should it search
+        out: suggested step: pos, newpos
         Finds the best posible step given the boars state and returns it
-        ## todo: add feature: store the best steps and choose randomly
+        If there are multiple best states, it chooses randomly.
         '''
 
         best = -1000
-        for pos in self.can_move:
-            for newpos in self.board[pos].options:
-                x = self.evaluate_step(pos, newpos, depth)
-                if x>best:
-                    best, best_pos, best_newpos = x, pos, newpos
+        best_list = []
+        for pos in self.can_move: ## all pieces that can move
+            for newpos in self.board[pos].options: ## and where they can move
+                x = self.evaluate_step(pos, newpos, depth) ### see the value of the step
+                if x>best:## if its better than everything until now it will be the only element of the best list
+                    best = x
+                    best_list = [[pos,newpos]]
+
+                elif x==best: ## if it is as good as everything until now, it is added to the best list
+                    best_list.append([pos, newpos])
         
-        return best_pos, best_newpos
+        c = randint(0, len(best_list)-1) ## choose a random step from the best posibble steps
+        
+        return best_list[c][0], best_list[c][1]
 
     def player_turn(self): ## this function takes input from the user and makes changes to the board based on it
         ## obv the mode of input will be needed to be changed with the ui
@@ -341,13 +353,14 @@ class game():
                 print(self.board[pos].det_opt)
                 newpos = tuple(int(i) for i in input())
                 if newpos in self.can_move and newpos!=pos: ## you can re-enter another pos if you want to move another piece
-                    pos = newpos ##                                 ## but only if its not a sequential take
+                    # pos = newpos ##                                 ## but only if its not a sequential take
                     break ## newpos!=pos -- so you can move in a circle
 
                 if newpos == (9,9): # exit button
                     return 0
 
-            if newpos in self.can_move: ## this makes so that you can enter the newpos for the changed pos
+            if newpos in self.can_move and newpos!=pos: ## this makes so that you can enter the newpos for the changed pos
+                pos = newpos
                 continue## goes to asking for the newpos again bc pos = newpos as of now
 
             self.step(pos, newpos) # the player takes their step
@@ -394,11 +407,3 @@ class game():
             print(f"Current player: {self.turn}")
             game_state = self.bot_turn()
             
-            
-a = game()
-a.update_all()
-
-# a.import_boardstate(custom_state, 1)
-
-a.game_start_bvb()
-# a.game_start_pvp()
