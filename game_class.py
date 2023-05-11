@@ -2,20 +2,20 @@ from typing import List, Dict, Type
 
 class Pos:
     def __init__(self, i:int, j:int) -> None:
-        self.pos: tuple[int, int] = (i,j)
+        self.ind: tuple[int, int] = (i,j)
 
-    def __getitem__(self, ind) -> int:
-        if ind == 0: return self.pos[0]
-        else: return self.pos[1]
+    def __getitem__(self, c) -> int:
+        return self.ind[c]
 
     def __add__(self, other: 'Pos') -> None:
-        self.pos = (self[0] + other[0], self[1] + other[1])
+        self.ind = (self[0] + other[0], self[1] + other[1])
 
     def __mul__(self, scalar: int) -> None:
-        self.pos = (scalar*self[0], scalar*self[1])
+        self.ind = (scalar*self[0], scalar*self[1])
 
     def is_valid(self) -> bool:
         return (0 <= self[0] < 8) and (0 <= self[1] < 8) 
+    
 
 FL = Pos( 1,  1)
 FR = Pos( 1, -1)
@@ -26,17 +26,16 @@ class CheckersPiece(object):
     def __init__(self,
                  game: 'CheckersGame',
                  pos: Pos,
-                 color: int,
-                 crowned: bool = False):
+                 color: int):
         
         self.game: CheckersGame = game
         self.pos: Pos = pos
         self.color: int = color
-        self.crowned = False
+        self.crowned: bool = False
 
-        self.move_options: List[Pos] = []
-        self.detailed_options: Dict[Pos, MoveDetails] = dict()
-        self.forced_capture: bool  = False
+        self.move_options: list[Pos] = []
+        self.detailed_options: dict[Pos, MoveDetails] = dict()
+        self.forced_capture: bool = True
 
     def __str__(self):
         if not self.crowned:
@@ -100,7 +99,34 @@ class CheckersGame:
         
         P1 = TypeP1(self,  1)
         P2 = TypeP2(self, -1)
+        self.current_player = 1
+
+        self.board: dict[tuple[int, int], CheckersPiece] = {
+            (i, j): CheckersPiece(self, Pos(i, j),  1)
+            for i in range(0, 3) for j in range(8)
+            if (i+j)%2 == 1 
+        } | {
+            (i, j): CheckersPiece(self, Pos(i, j), -1)
+            for i in range(5, 8) for j in range(8)
+            if (i+j)%2 == 1 
+        }
+
+    def duplicate(self):
+        newgame = CheckersGame()
 
 class MoveDetails:
-    def __init__(self):
+    def __init__(self, 
+                 piece: CheckersPiece):
+        self.piece = piece
+        self.final_pos: Pos = None
+        self.taking: list[CheckersPiece] = []
+        self.creates_crown: bool = False
+
+
+class RealPlayer(PlayerCharacterBase):
+    def __init__(self, game):
         pass
+
+    def make_move(self):
+        pass
+    # TODO: játékos lépési lehetőségei és megfelelő animációk
