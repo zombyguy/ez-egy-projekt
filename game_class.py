@@ -115,11 +115,9 @@ class CheckersGame:
         newgame = CheckersGame()
 
 class MoveDetails:
-    def __init__(self, 
-                 piece: CheckersPiece):
-        self.piece = piece
-        self.final_pos: Pos = None
-        self.taking: list[CheckersPiece] = []
+    def __init__(self):
+        self.positions: list[Pos] = []
+        self.taking: list[Pos] = []
         self.creates_crown: bool = False
 
 
