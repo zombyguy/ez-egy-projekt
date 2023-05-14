@@ -1,5 +1,6 @@
 from game_pvp import *
 from checkers_graphics import *
+from menu import *
 
 # TILE_SIZE = 40
 # GAME_WINDOW_SIZE = TILE_SIZE * 10
@@ -12,24 +13,32 @@ from checkers_graphics import *
 # P2_COLOR = (0,0,0)
 
 CAN_PROCEED = True
-IN_MENU = True
+GFX: CheckersGraphics = None
+GAME: game = None
 
 def setup():
-    py5.size(GAME_WINDOW_SIZE, GAME_WINDOW_SIZE)
+    py5.size(MENU.width, MENU.height)
     py5.rect_mode(py5.CENTER)
-    py5.background(128)
+
+    # py5.size(GAME_WINDOW_SIZE, GAME_WINDOW_SIZE)
+    # py5.rect_mode(py5.CENTER)
+    # py5.background(128)
 
 def draw():
     global CAN_PROCEED
 
-    if IN_MENU:
-        # menü loop
-        pass
+    if MENU.in_menu:
+        MENU.draw()
+        return
 
     for row in GFX.tileset:
         for tile in row:
             py5.fill(*tile.color)
             py5.square(tile.x, tile.y, TILE_SIZE)
+    
+    if GAME.turn == 1: py5.fill(255)
+    else: py5.fill(0)
+    py5.square(10, 10, 20)
 
     for piece in GFX.pieces:
         piece.draw()
@@ -66,7 +75,7 @@ def draw():
 
     if not GFX.in_motion:
         # if CAN_PROCEED and GAME_STATE != 0:
-        if GAME_STATE != 0:
+        if GAME.game_state != 0:
             # print(f"Current player: {GAME.turn}")
             # CAN_PROCEED = False
             py5.launch_thread(GAME.move, name='move')
@@ -79,15 +88,36 @@ def key_pressed(e):
         CAN_PROCEED = True
 
 def mouse_clicked(e):
-    i = py5.mouse_y // TILE_SIZE - 1
-    j = py5.mouse_x // TILE_SIZE - 1
-    print(f"[{i}, {j}]")
-    GFX.clicked_pos = (i,j)
+    if MENU.in_menu:
+        for name, box in MENU.boxes.items():
+            if cursor_in_box(*box):
+                MENU.selected_mode = name
+                return
+        if cursor_in_box(*MENU.start_box):
+            global GAME, GFX
+            MENU.in_menu = False
+
+            GAME = game(MENU.selected_mode)
+            GFX = GAME.GFX
+
+            surface = py5.get_surface()
+            surface.set_resizable(True)
+            surface.set_size(GAME_WINDOW_SIZE, GAME_WINDOW_SIZE)
+            surface.set_resizable(False)
+
+            GAME.update_all()
+
+    else: # ingame
+        i = py5.mouse_y // TILE_SIZE - 1
+        j = py5.mouse_x // TILE_SIZE - 1
+        print(f"[{i}, {j}]")
+        GFX.clicked_pos = (i,j)
 
 
 if __name__ == "__main__":
-    GAME = game('pvp')
-    GFX = GAME.GFX
-    GAME_STATE = 1
-    GAME.update_all()
+    MENU = Menu()
+    # GAME = game('pvp')
+    # GFX = GAME.GFX
+    # GAME_STATE = 1
+    # GAME.update_all()
     py5.run_sketch()

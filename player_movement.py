@@ -8,7 +8,6 @@ class MovingPiece:
         self.G = G
         self.possible_steps = []
         self.captured_poss = []
-        self.forced_to_move = False
 
     def find_steps(self):
         if self.piece.crowned: dirs = [(1,1), (1,-1), (-1,1), (-1,-1)]

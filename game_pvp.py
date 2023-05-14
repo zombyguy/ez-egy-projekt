@@ -182,6 +182,9 @@ class game():
         self.can_move = []
         self.mode = mode
 
+        self.game_state = 1
+        self.update_all()
+
     def __str__(self): # its ugly af but it works
         return "\n".join([str([str(self.board[(i,j)]) if (i,j) in self.board.keys() else " 0" for j in range(8)]).replace("'", "").replace(",", "")
                           for i in range(8)])
@@ -371,6 +374,7 @@ class game():
 
         print(self)
         print('---')
+        print(self.can_move)
 
         piece = self.board[self.can_move[0]]
         if piece.can_take: forced_capture = True
@@ -422,8 +426,9 @@ class game():
                 mpiece.make_step(newpos)
                 mpiece.find_steps()
 
-            self.update_all()
             self.turn *= -1
+            self.update_all()
+            
             self.GFX.active_piece = None
             self.GFX.phantom_pieces = []
             return
@@ -488,10 +493,6 @@ class game():
 
         self.step(pos, newpos) # the player takes their step
         return 1
-
-    def initialize(self):
-        self.game_state = 1
-        self.update_all()
 
     def move(self):
         print(f"Current player: {self.turn}")
