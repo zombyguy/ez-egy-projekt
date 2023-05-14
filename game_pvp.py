@@ -1,17 +1,20 @@
 from checkers_graphics import *
+from random import randint
 
 def startcol(place):
     return (place[0]+place[1])%2*(-1) if place[0]>4 else (place[0]+place[1])%2
 
-def is_valid(place):
-    return 0<=place[0]<8 and 0<=place[1]<8
+def is_valid(pos, board, start): ## a place is valid if its not occupied or off the board
+    if pos not in board or pos == start: ## but it is valid, if it was the original position of a piece is a recursion (it can move in a circle)
+        return 0<=pos[0]<8 and 0<=pos[1]<8
+    return False
 
 ## pieces for the bot
-class piece(object):
+class Piece():
     def __init__(self, GFX, pos, col, crowned = False):
         self.col = col # color
         self.options = [] # available positions to move to
-        self.det_opt = dict() # detailed options: {newpos:[#pieces took, [pieces took], got_crowned]}
+        self.det_opt = dict() # detailed options: {newpos:[value*, [pieces took], got_crowned, [path]]} * = #pieces took + I_{just got crowned} + 100*I_{won the game}
         self.crowned = crowned # if the piece is crowned
         self.can_take = False # can the piece take
         self.pos = pos # current position
@@ -45,7 +48,7 @@ class piece(object):
         self.can_take = False
         if self.crowned:
             for direction in [(1,1),(1,-1),(-1,1),(-1,-1)]: # for each direction
-                self.check_take(board, direction, self.pos, [(1,1),(1,-1),(-1,1),(-1,-1)])
+                self.check_take(board, direction, self.pos, [(1,1),(1,-1),(-1,1),(-1,-1)], self.pos)
 
             if not self.can_take: # adds any direction that is not used if the piece cant take
                 for direction in [(1,1),(1,-1),(-1,1),(-1,-1)]:
@@ -54,7 +57,7 @@ class piece(object):
         else:
             # checking if the piece can take
             for direction in [(self.col, 1), (self.col, -1)]: ## checks if the piece can take in the right direction
-                self.check_take(board, direction, self.pos, [(self.col, 1), (self.col, -1)])
+                self.check_take(board, direction, self.pos, [(self.col, 1), (self.col, -1)], self.pos)
 
             ## Uteskenyszer miatt
             if not self.can_take:
@@ -68,32 +71,35 @@ class piece(object):
         self.game_end_bonus(board)
 
 
-    def check_take(self, board, direction, pos, dirs, prev_dir = (9,9)):
+    def check_take(self, board, direction, pos, dirs, start, already_taken = []):
         '''
         Checks if the piece can take in the given direction and if it can then it tries going further from there
         board: current board state
         direction: direction to check
         pos: current position of the piece
         dirs: all the directions the piece can move: used for recursion
-        prev_dir: direction the piece came from (used if this is not the first step)
+        already_taken: pieces that got taken - you cant take them a second time
+        start: the place where the piece started from (that place is not counted as occupied when checking if a piece is there on the board)
         '''
-
-        if prev_dir == direction: # it cant go back in the direction it came from
-            return set()
-        ## checks if the piece can take in the given direction in a given board state
         check_pos = (pos[0]+direction[0], pos[1]+direction[1]) ## position to check
+
+        if check_pos in already_taken: ## it cant take the same piece twice 
+            return set() # (and it also cant make a normal move after taking)
+
+    ## checks if the piece can take in the given direction in a given board state
         if check_pos in board.keys(): #if there is a piece in that direction
             if (board[check_pos].col != self.col # and its an enemy
-            and (check_pos[0]+direction[0], check_pos[1]+direction[1]) not in board.keys() # and the next place is free
-            and is_valid((check_pos[0]+direction[0], check_pos[1]+direction[1]))): # and its on the board
+            and is_valid((check_pos[0]+direction[0], check_pos[1]+direction[1]), board.keys(), start)): # and its on the board
                 self.can_take = True
+                already_taken_new = already_taken.copy()
+                already_taken_new.append(check_pos)
                 newpos = (check_pos[0]+direction[0], check_pos[1]+direction[1]) # the pos the piece will land on
 
                 if (newpos[0]==0 and self.col == -1) or (newpos[0]==7 and self.col == 1): ## treat the piece as a queen if las row reached
                     dirs = [(1,1),(1,-1),(-1,1),(-1,-1)]
 
-                if not self.can_take_more(board, newpos, dirs, (direction[0]*(-1),direction[1]*(-1))): ## if the piece cant take more
-                    self.det_opt[newpos] = [1, [(newpos[0]-direction[0], newpos[1]-direction[1])], False] ## this is the last piece we will take
+                if not self.can_take_more(board, newpos, dirs, start, already_taken_new): ## if the piece cant take more
+                    self.det_opt[newpos] = [1, [(newpos[0]-direction[0], newpos[1]-direction[1])], False, [newpos]] ## this is the last piece we will take
                     if board[(newpos[0]-direction[0], newpos[1]-direction[1])].crowned: # extra point if the taken piece was crowned
                         self.det_opt[newpos][0]+=1
                         
@@ -103,10 +109,11 @@ class piece(object):
                 else:
                     final_positions = set()
                     for next_dir in dirs: # finding all the final positions that could be reached from here
-                        dir_finals = self.check_take(board, next_dir, newpos, dirs, (direction[0]*(-1),direction[1]*(-1))) # ending positions in this direction
+                        dir_finals = self.check_take(board, next_dir, newpos, dirs, start, already_taken_new) # ending positions in this direction
                         for fin in dir_finals:
                             self.det_opt[fin][0]+=1 ## adds 1 to the number of pieces that will be taken if we go to this pos
-                            self.det_opt[fin][1].append((newpos[0]-direction[0], newpos[1]-direction[1]))## expands the list on how to reach it
+                            self.det_opt[fin][3].append(newpos)## expands the list of visited places
+                            self.det_opt[fin][1].append((newpos[0]-direction[0], newpos[1]-direction[1]))## expands the list of the taken pieces
                             if board[(newpos[0]-direction[0], newpos[1]-direction[1])].crowned: # extra point if the taken piece was crowned
                                 self.det_opt[fin][0]+=1
 
@@ -128,11 +135,11 @@ class piece(object):
         ## used to list options if the piece cant take
         ## adds the position in the given direction to options if not occupied
         newpos = (self.pos[0]+direction[0], self.pos[1]+direction[1]) ## position to check
-        if newpos not in board.keys() and is_valid(newpos): ## if its not occupied or off the board
+        if is_valid(newpos, board.keys(), (9,9)): ## if its not occupied or off the board; (9,9) because: since it didn't take it cant move back to the original position
             self.det_opt[newpos] = [0, [], False]
             self.det_opt[newpos][2] = ((newpos[0]==0 and self.col == -1) or (newpos[0]==7 and self.col == 1))
 
-    def can_take_more(self,board,pos,dirs, prev_dir = (9,9)):
+    def can_take_more(self,board,pos,dirs,start, already_taken = []):
         '''
         Checks if the piece can take someting from [pos] position given [board] boardstate in one of the [dirs] directions except for [prev_dir]
         This is used when checking for sequential takes, so the pos argument is not necessarily the same as self.pos
@@ -140,14 +147,12 @@ class piece(object):
         '''
          ## can the piece take sg? - used for the depth search
         for direction in dirs:
-            if direction != prev_dir:
-                check_pos = (pos[0]+direction[0], pos[1]+direction[1])
-                if check_pos in board.keys(): #if there is a piece in that direction
-                    if (board[check_pos].col != self.col # and its an enemy
-                    and (check_pos[0]+direction[0], check_pos[1]+direction[1]) not in board.keys() # and the next place is free
-                    and is_valid((check_pos[0]+direction[0], check_pos[1]+direction[1]))):
-                        return True
-                
+            check_pos = (pos[0]+direction[0], pos[1]+direction[1])
+            if check_pos not in already_taken and check_pos in board.keys(): #if there is a piece in that direction that we didnt take yet
+                if (board[check_pos].col != self.col # and its an enemy
+                and is_valid((check_pos[0]+direction[0], check_pos[1]+direction[1]), board.keys(), start)): ## its a valid place
+                    return True
+                    
         return False
 
     def crowned_bonus(self):
@@ -167,10 +172,10 @@ class piece(object):
             if len(self.det_opt[newpos][1]) == n_enemies:
                 self.det_opt[newpos][0]+=100
 
-class game(object):
+class game():
     def __init__(self):
         self.GFX = CheckersGraphics()
-        self.board = {pos: piece(self.GFX, pos, startcol(pos))
+        self.board = {pos: Piece(self.GFX, pos, startcol(pos))
                        for pos in [(i,j) for i in range(8) for j in range(8) if (i+j)%2==1 and (i<3 or i>4)]}
         self.turn = 1
         self.can_move = []
@@ -203,7 +208,6 @@ class game(object):
 
         Then lists all of them that can move to self.can_move
         '''
-
         for p in self.board.values():
             p.update(self.board)
 
@@ -220,7 +224,7 @@ class game(object):
         for i in range(8):
             for j in range(8):
                 if board[i][j] != 0:
-                    self.board[(i,j)] = piece(self.GFX, (i,j), int(abs(board[i][j])/board[i][j]), abs(board[i][j])>1)
+                    self.board[(i,j)] = Piece(self.GFX, (i,j), int(abs(board[i][j])/board[i][j]), abs(board[i][j])>1)
 
         self.update_all()
 
@@ -249,9 +253,11 @@ class game(object):
             if self.board[pos].det_opt[newpos][2]: # crown if last row reached
                 self.board[pos].crowned = True
                 self.board[pos].piece_gfx.crowned = True
-            self.board[newpos] = self.board[pos] ### we move our piece in these 3 steps:
-            self.board[newpos].pos = newpos###
-            del self.board[pos]###
+            
+            if newpos!= pos: # so we can move in a circle
+                self.board[newpos] = self.board[pos] ### we move our piece in these 3 steps:
+                self.board[newpos].pos = newpos###
+                del self.board[pos]###
             self.board[newpos].update(self.board) # we check if the piece can take another (it will be done elsewhere)
 
         ## not taking an enemy piece
@@ -268,7 +274,6 @@ class game(object):
     def simulate_step(self, pos, newpos):
         '''
         This function is used to create a simualtion game with the step taken.
-        It is just to make 
         '''
         newgame = game() ### create a simulation where we make this step
         prev_game = self.export_boardstate()### export the game data from the current game
@@ -297,8 +302,8 @@ class game(object):
         if depth == 1: ## if this is the last depth layer 
             return self.board[pos].det_opt[newpos][0] - max(
                 [max([option[0] for option in newgame.board[piece].det_opt.values()]) for piece in newgame.can_move])
-            ## this returns the number of pieces taken minus the maximum number of pieces the player can take with their next step
-        
+            # this returns the number of pieces taken minus the maximum number of pieces the player can take with their next step
+
         worst = 1000 ## the number of points the bot will lose if the player playes their best move (this value is minimized)
         for piece in newgame.can_move: ## check every piece of the player
             for option in newgame.board[piece].options: # and their every move
@@ -317,19 +322,27 @@ class game(object):
 
     def find_best_step(self, depth):
         '''
+        in: depth: how far should it search
+        out: suggested step: pos, newpos
         Finds the best posible step given the boars state and returns it
+        If there are multiple best states, it chooses randomly.
         '''
 
         best = -1000
-        for pos in self.can_move:
-            for newpos in self.board[pos].options:
-                x = self.evaluate_step(pos, newpos, depth)
-                if x>best:
-                    best, best_pos, best_newpos = x, pos, newpos
+        best_list = []
+        for pos in self.can_move: ## all pieces that can move
+            for newpos in self.board[pos].options: ## and where they can move
+                x = self.evaluate_step(pos, newpos, depth) ### see the value of the step
+                if x>best:## if its better than everything until now it will be the only element of the best list
+                    best = x
+                    best_list = [[pos,newpos]]
+
+                elif x==best: ## if it is as good as everything until now, it is added to the best list
+                    best_list.append([pos, newpos])
         
-        return best_pos, best_newpos
-
-
+        c = randint(0, len(best_list)-1) ## choose a random step from the best posibble steps
+        
+        return best_list[c][0], best_list[c][1]
 
     def player_turn(self): ## this function takes input from the user and makes changes to the board based on it
         ## obv the mode of input will be needed to be changed with the ui
@@ -354,14 +367,15 @@ class game(object):
                 print(f"places to move to: {self.board[pos].options}")
                 print(self.board[pos].det_opt)
                 newpos = tuple(int(i) for i in input())
-                if newpos in self.can_move: ## you can re-enter another pos if you want to move another piece
-                    pos = newpos ##                                 ## but only if its not a sequential take
-                    break
+                if newpos in self.can_move and newpos!=pos: ## you can re-enter another pos if you want to move another piece
+                    # pos = newpos ##                                 ## but only if its not a sequential take
+                    break ## newpos!=pos -- so you can move in a circle
 
                 if newpos == (9,9): # exit button
                     return 0
 
-            if newpos in self.can_move: ## this makes so that you can enter the newpos for the changed pos
+            if newpos in self.can_move and newpos!=pos: ## this makes so that you can enter the newpos for the changed pos
+                pos = newpos
                 continue## goes to asking for the newpos again bc pos = newpos as of now
 
             self.step(pos, newpos) # the player takes their step
@@ -376,12 +390,9 @@ class game(object):
             print(f"GAME OVER \n {self.turn*(-1)} WINS")
             print(self)
             return 0
-
+        
         print(self)
-        print('---')
-
-        pos, newpos = self.find_best_step(2)
-
+        pos, newpos = self.find_best_step(3)
         print(pos, newpos)
         print(self.board[pos].det_opt[newpos])
 
@@ -403,7 +414,24 @@ class game(object):
         self.step(pos, newpos) # the player takes their step
         return 1
 
-    def game_start(self):
+    def game_start_pvp(self): ## player vs player game
+        game_state = 1
+        self.update_all()
+        while game_state != 0:
+            print(f"Current player: {self.turn}")
+            game_state = self.player_turn()
+
+    def game_start_pvb(self): ## player vs bot game
+        game_state = 1
+        self.update_all()
+        while game_state != 0:
+            print(f"Current player: {self.turn}")
+            if self.turn == 1:
+                game_state = self.player_turn()
+            if self.turn == -1:
+                game_state = self.bot_turn()
+
+    def game_start_bvb(self): ## bot vs bot game ## toggle the prints in self.bot_turn() to spectate
         game_state = 1
         self.update_all()
         while game_state != 0:
