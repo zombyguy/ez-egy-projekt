@@ -31,6 +31,7 @@ def draw():
         MENU.draw()
         return
 
+    py5.stroke_weight(1)
     for row in GFX.tileset:
         for tile in row:
             py5.fill(*tile.color)
@@ -53,32 +54,39 @@ def draw():
         py5.circle(GFX.active_piece.x, GFX.active_piece.y, PIECE_SIZE//2)
 
     if py5.has_thread('move'): return
+    if py5.has_thread('gfx_motion'): return
+    py5.launch_thread(GAME.move, name='move')
 
-    if GFX.in_motion:
-        if (86 <= GFX.current_motion.angle < 90) and len(GFX.destroy_cue) > 0:
-            print("--- PIECE REMOVED ---")
-            piece_gfx = GFX.destroy_cue.popleft()
-            piece_gfx.destroy()
-            del piece_gfx
-        # print(GFX.current_motion.angle)
-        if GFX.current_motion.update():
-            GFX.current_motion = None
-            GFX.in_motion = False
+    if len(GFX.motion_cue) > 0:
+        motion = GFX.motion_cue.popleft()
+        py5.launch_thread(motion.animate, name='gfx_motion')
+
+    # if GFX.in_motion:
+    #     if (86 <= GFX.current_motion.angle < 90) and len(GFX.destroy_cue) > 0:
+    #         print("--- PIECE REMOVED ---")
+    #         piece_gfx = GFX.destroy_cue.popleft()
+    #         piece_gfx.destroy()
+    #         del piece_gfx
+    #     # print(GFX.current_motion.angle)
+    #     if GFX.current_motion.update():
+    #         GFX.current_motion = None
+    #         GFX.in_motion = False
         
-    if not GFX.in_motion:
-        if len(GFX.motion_cue) > 0:
-            GFX.current_motion = GFX.motion_cue.popleft()
-            piece_gfx = GFX.current_motion.piece
-            i = GFX.pieces.index(piece_gfx)
-            GFX.pieces[-1], GFX.pieces[i] = GFX.pieces[i], GFX.pieces[-1]
-            GFX.in_motion = True
-
-    if not GFX.in_motion:
-        # if CAN_PROCEED and GAME_STATE != 0:
-        if GAME.game_state != 0:
-            # print(f"Current player: {GAME.turn}")
-            # CAN_PROCEED = False
-            py5.launch_thread(GAME.move, name='move')
+    # if not GFX.in_motion:
+    #     if len(GFX.motion_cue) > 0:
+    #         GFX.current_motion = GFX.motion_cue.popleft()
+    #         piece_gfx = GFX.current_motion.piece_gfx
+    #         i = GFX.pieces.index(piece_gfx)
+    #         GFX.pieces[-1], GFX.pieces[i] = GFX.pieces[i], GFX.pieces[-1]
+    #         GFX.in_motion = True
+        
+    #     elif GAME.game_state != 0:
+    # # if not GFX.in_motion:
+    #     # if CAN_PROCEED and GAME_STATE != 0:
+    #     # if GAME.game_state != 0:
+    #         # print(f"Current player: {GAME.turn}")
+    #         # CAN_PROCEED = False
+    #         py5.launch_thread(GAME.move, name='move')
 
 def key_pressed(e):
     global CAN_PROCEED

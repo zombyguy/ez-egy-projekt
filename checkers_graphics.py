@@ -1,6 +1,7 @@
 import py5
 from collections import deque 
 from typing import Tuple, Deque
+from time import sleep, time
 
 TILE_SIZE = 40
 GAME_WINDOW_SIZE = TILE_SIZE * 10
@@ -72,11 +73,11 @@ class PieceGFX:
 
 class GFXMotion:
     def __init__(self, 
-                 piece: PieceGFX, 
+                 piece_gfx: PieceGFX, 
                  source: Tuple[int, int], 
                  target: Tuple[int, int], 
                  crowned = False):
-        self.piece: PieceGFX = piece
+        self.piece_gfx: PieceGFX = piece_gfx
         self.source = ((source[1]+1.5)*TILE_SIZE,
                        (source[0]+1.5)*TILE_SIZE)
         self.target = ((target[1]+1.5)*TILE_SIZE,
@@ -86,19 +87,52 @@ class GFXMotion:
     
     def update(self):
         if self.angle == 180: 
-            self.piece.x = self.target[0]
-            self.piece.y = self.target[1]
+            self.piece_gfx.x = self.target[0]
+            self.piece_gfx.y = self.target[1]
             return True
 
         scale = (1 - py5.cos(py5.PI*self.angle/180)) / 2 
-        self.piece.x = scale*self.target[0] + (1-scale)*self.source[0]
-        self.piece.y = scale*self.target[1] + (1-scale)*self.source[1]
+        self.piece_gfx.x = scale*self.target[0] + (1-scale)*self.source[0]
+        self.piece_gfx.y = scale*self.target[1] + (1-scale)*self.source[1]
         self.angle += 4
         return False
     
+    def animate(self):
+        GFX = self.piece_gfx.GFX
+        i = GFX.pieces.index(self.piece_gfx)
+        GFX.pieces[-1], GFX.pieces[i] = GFX.pieces[i], GFX.pieces[-1]
+
+        delta = 0.1
+        # angle = 0
+        start_time = time()
+        last_time = start_time
+        # while angle < 180:
+        while last_time - start_time < 1:
+            newtime = time()
+            # if (90-delta <= angle < 90) and len(GFX.destroy_cue) > 0:
+            if ((last_time-start_time) <= 0.5 < (newtime - start_time)) and len(GFX.destroy_cue) > 0:
+                print("--- PIECE REMOVED ---")
+                piece_gfx = GFX.destroy_cue.popleft()
+                piece_gfx.destroy()
+                del piece_gfx
+
+            # scale = (1 - py5.cos(py5.PI*angle/180)) / 2 
+            # angle = newtime - start_time
+            scale = (1 - py5.cos(py5.PI*(newtime-start_time))) / 2 
+            self.piece_gfx.x = scale*self.target[0] + (1-scale)*self.source[0]
+            self.piece_gfx.y = scale*self.target[1] + (1-scale)*self.source[1]
+            print(self.piece_gfx.x, self.piece_gfx.y)
+            last_time = newtime
+            # angle += delta
+            # sleep(0.0001)
+
+        self.piece_gfx.x = self.target[0]
+        self.piece_gfx.y = self.target[1]
+
+
     def __del__(self):
         if self.creates_crown: 
-            self.piece.crowned = True
+            self.piece_gfx.crowned = True
 
 # if __name__ == "__main__":
 #     GFX = CheckersGraphics()
