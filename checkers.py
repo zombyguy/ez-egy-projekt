@@ -12,6 +12,7 @@ from checkers_graphics import *
 # P2_COLOR = (0,0,0)
 
 CAN_PROCEED = True
+IN_MENU = True
 
 def setup():
     py5.size(GAME_WINDOW_SIZE, GAME_WINDOW_SIZE)
@@ -19,7 +20,11 @@ def setup():
     py5.background(128)
 
 def draw():
-    global GAME_STATE, CAN_PROCEED
+    global CAN_PROCEED
+
+    if IN_MENU:
+        # menü loop
+        pass
 
     for row in GFX.tileset:
         for tile in row:
@@ -28,6 +33,8 @@ def draw():
 
     for piece in GFX.pieces:
         piece.draw()
+
+    if py5.has_thread('move'): return
 
     if GFX.in_motion:
         if (86 <= GFX.current_motion.angle < 90) and len(GFX.destroy_cue) > 0:
@@ -52,17 +59,18 @@ def draw():
         if CAN_PROCEED and GAME_STATE != 0:
             print(f"Current player: {GAME.turn}")
             CAN_PROCEED = False
-            GAME_STATE = GAME.bot_turn()
+            py5.launch_thread(GAME.move, name='move')
 
 def key_pressed(e):
     global CAN_PROCEED
     pressed_key = e.get_key()
+    if py5.has_thread('move'): return 
     if pressed_key == py5.ENTER:
         CAN_PROCEED = True
 
 
 if __name__ == "__main__":
-    GAME = game()
+    GAME = game('bvb')
     GFX = GAME.GFX
     GAME_STATE = 1
     GAME.update_all()

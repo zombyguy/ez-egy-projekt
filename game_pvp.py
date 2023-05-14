@@ -173,12 +173,13 @@ class Piece():
                 self.det_opt[newpos][0]+=100
 
 class game():
-    def __init__(self):
+    def __init__(self, mode='bvb'):
         self.GFX = CheckersGraphics()
         self.board = {pos: Piece(self.GFX, pos, startcol(pos))
                        for pos in [(i,j) for i in range(8) for j in range(8) if (i+j)%2==1 and (i<3 or i>4)]}
         self.turn = 1
         self.can_move = []
+        self.mode = mode
 
     def __str__(self): # its ugly af but it works
         return "\n".join([str([str(self.board[(i,j)]) if (i,j) in self.board.keys() else " 0" for j in range(8)]).replace("'", "").replace(",", "")
@@ -414,27 +415,47 @@ class game():
         self.step(pos, newpos) # the player takes their step
         return 1
 
-    def game_start_pvp(self): ## player vs player game
-        game_state = 1
+    def initialize(self):
+        self.game_state = 1
         self.update_all()
-        while game_state != 0:
-            print(f"Current player: {self.turn}")
-            game_state = self.player_turn()
 
-    def game_start_pvb(self): ## player vs bot game
-        game_state = 1
-        self.update_all()
-        while game_state != 0:
+    def move(self):
+        print(f"Current player: {self.turn}")
+        if self.mode == 'pvp':
+            self.game_state = self.player_turn()
+
+        elif self.mode == 'pvb':
             print(f"Current player: {self.turn}")
             if self.turn == 1:
-                game_state = self.player_turn()
+                self.game_state = self.player_turn()
             if self.turn == -1:
-                game_state = self.bot_turn()
-
-    def game_start_bvb(self): ## bot vs bot game ## toggle the prints in self.bot_turn() to spectate
-        game_state = 1
-        self.update_all()
-        while game_state != 0:
+                self.game_state = self.bot_turn()
+        
+        elif self.mode == 'bvb':
             print(f"Current player: {self.turn}")
-            game_state = self.bot_turn()
+            self.game_state = self.bot_turn()
+
+    # def game_start_pvp(self): ## player vs player game
+    #     game_state = 1
+    #     self.update_all()
+    #     while game_state != 0:
+    #         print(f"Current player: {self.turn}")
+    #         game_state = self.player_turn()
+
+    # def game_start_pvb(self): ## player vs bot game
+    #     game_state = 1
+    #     self.update_all()
+    #     while game_state != 0:
+    #         print(f"Current player: {self.turn}")
+    #         if self.turn == 1:
+    #             game_state = self.player_turn()
+    #         if self.turn == -1:
+    #             game_state = self.bot_turn()
+
+    # def game_start_bvb(self): ## bot vs bot game ## toggle the prints in self.bot_turn() to spectate
+    #     game_state = 1
+    #     self.update_all()
+    #     while game_state != 0:
+    #         print(f"Current player: {self.turn}")
+    #         game_state = self.bot_turn()
             
