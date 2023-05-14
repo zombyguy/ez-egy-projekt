@@ -34,6 +34,10 @@ class CheckersGraphics():
         self.current_motion: GFXMotion = None
         self.destroy_cue: Deque[PieceGFX] = deque()
 
+        self.clicked_pos: tuple[int,int] = (-1,-1)
+        self.active_piece: PieceGFX = None
+        self.phantom_pieces: list[tuple[int, int]] = list() 
+
 class TileGFX:
     def __init__(self, x,y, color = (255,255,255)):
         self.x = x
@@ -41,7 +45,11 @@ class TileGFX:
         self.color = color
     
 class PieceGFX:
-    def __init__(self, pos, P1: bool, crowned: bool, GFX):
+    def __init__(self, 
+                 pos: tuple[int, int], 
+                 P1: bool, 
+                 crowned: bool, 
+                 GFX: CheckersGraphics):
         self.x = (pos[1]+1.5)*TILE_SIZE
         self.y = (pos[0]+1.5)*TILE_SIZE
         self.p1 = P1

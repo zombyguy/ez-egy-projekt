@@ -1,5 +1,6 @@
 from checkers_graphics import *
 from random import randint
+from player_movement import MovingPiece
 
 def startcol(place):
     return (place[0]+place[1])%2*(-1) if place[0]>4 else (place[0]+place[1])%2
@@ -247,6 +248,21 @@ class game():
         Then changes the turn to the other player and updates the pieces that can move
         '''
         ## taking an enemy piece
+
+        piece_gfx = self.board[pos].piece_gfx
+        if (len(self.board[pos].det_opt[newpos][1]) == 0):
+            motion = GFXMotion(piece_gfx, pos, newpos)
+            self.GFX.motion_cue.append(motion)
+        else:
+            temp_pos = pos
+            for captured_pos in self.board[pos].det_opt[newpos][1][::-1]:
+                temp_newpos = (2*captured_pos[0] - temp_pos[0],
+                               2*captured_pos[1] - temp_pos[1])
+                self.GFX.destroy_cue.append(self.board[captured_pos].piece_gfx)
+                motion = GFXMotion(piece_gfx, temp_pos, temp_newpos)
+                self.GFX.motion_cue.append(motion)
+                temp_pos = temp_newpos
+
         if self.board[pos].can_take:
             for enemy_pos in self.board[pos].det_opt[newpos][1]: # removing the piece that got taken
                 del self.board[enemy_pos]
@@ -355,32 +371,105 @@ class game():
 
         print(self)
         print('---')
+
+        piece = self.board[self.can_move[0]]
+        if piece.can_take: forced_capture = True
+        else: forced_capture = False
+        
+        if forced_capture:
+            print(f"pieces to move: {self.can_move}")
+            while True:
+                pos = (-1,-1)
+                while pos not in self.can_move:
+                    print(f"{pos} waiting for pos, {self.can_move}")
+                    pos = self.GFX.clicked_pos
+                    #print(f"pieces to move: {self.can_move}")
+                self.GFX.clicked_pos = (-1,-1)
+                print(pos)
+
+                mpiece = MovingPiece(self, self.board[pos])
+                mpiece.find_steps()
+
+                self.GFX.phantom_pieces = mpiece.possible_steps
+                self.GFX.active_piece = mpiece.piece.piece_gfx
+
+                newpos = (-1, -1)
+                while newpos == (-1, -1):
+                    print(f"{pos}, waiting for newpos")
+                    newpos = self.GFX.clicked_pos
+                self.GFX.clicked_pos = (-1, -1)
+                print(f"{pos}, {newpos}")
+
+                self.GFX.phantom_pieces = []
+                self.GFX.active_piece = None
+
+                if newpos not in mpiece.possible_steps:
+                    continue
+
+                mpiece.make_step(newpos)
+                break
+            
+            mpiece.find_steps()
+            while len(mpiece.possible_steps) != 0:
+                self.GFX.phantom_pieces = mpiece.possible_steps
+                self.GFX.active_piece = mpiece.piece.piece_gfx
+
+                newpos = (-1, -1)
+                while not (newpos in mpiece.possible_steps):
+                    newpos = self.GFX.clicked_pos
+                self.GFX.clicked_pos = (-1, -1)
+
+                mpiece.make_step(newpos)
+                mpiece.find_steps()
+
+            self.update_all()
+            self.turn *= -1
+            self.GFX.active_piece = None
+            self.GFX.phantom_pieces = []
+            return
+
         while True: # cycle ensuring that the player can retry their input
+            pos = (-1,-1)
             while pos not in self.can_move:
+                pos = self.GFX.clicked_pos
+            
+            self.GFX.active_piece = self.board[pos].piece_gfx
+            self.GFX.phantom_pieces = self.board[pos].options
+            self.GFX.clicked_pos = (-1, -1)
+
+                # if pos == (9,9): #exit button
+                #     return 0
+
+            newpos = (-1, -1)
+            while newpos == (-1, -1):
+                newpos = self.GFX.clicked_pos
+            self.GFX.clicked_pos = (-1, -1)
+        
+            self.GFX.active_piece = None
+            self.GFX.phantom_pieces = []
+
+            if newpos not in self.board[pos].options:
                 print(f"pieces to move: {self.can_move}")
-                pos = tuple(int(i) for i in input()) ## currently takes input as a two digit number: e.g. 03 for (0,3)
+                continue
 
-                if pos == (9,9): #exit button
-                    return 0
+            # while newpos not in self.board[pos].options:
+            #     print(f"places to move to: {self.board[pos].options}")
+            #     print(self.board[pos].det_opt)
+            #     newpos = tuple(int(i) for i in input())
+            #     if newpos in self.can_move and newpos!=pos: ## you can re-enter another pos if you want to move another piece
+            #         # pos = newpos ##                                 ## but only if its not a sequential take
+            #         break ## newpos!=pos -- so you can move in a circle
 
-            newpos = '*'
-            while newpos not in self.board[pos].options:
-                print(f"places to move to: {self.board[pos].options}")
-                print(self.board[pos].det_opt)
-                newpos = tuple(int(i) for i in input())
-                if newpos in self.can_move and newpos!=pos: ## you can re-enter another pos if you want to move another piece
-                    # pos = newpos ##                                 ## but only if its not a sequential take
-                    break ## newpos!=pos -- so you can move in a circle
-
-                if newpos == (9,9): # exit button
-                    return 0
+            #     if newpos == (9,9): # exit button
+            #         return 0
 
             if newpos in self.can_move and newpos!=pos: ## this makes so that you can enter the newpos for the changed pos
                 pos = newpos
                 continue## goes to asking for the newpos again bc pos = newpos as of now
 
             self.step(pos, newpos) # the player takes their step
-                
+            print(f"pieces to move: {self.can_move}")
+
             break
 
         return 1
@@ -396,21 +485,6 @@ class game():
         pos, newpos = self.find_best_step(3)
         print(pos, newpos)
         print(self.board[pos].det_opt[newpos])
-
-        piece_gfx = self.board[pos].piece_gfx
-        if (self.board[pos].det_opt[newpos][0] == 0 or 
-                    self.board[pos].det_opt[newpos][2]):
-            motion = GFXMotion(piece_gfx, pos, newpos)
-            self.GFX.motion_cue.append(motion)
-        else:
-            temp_pos = pos
-            for captured_pos in self.board[pos].det_opt[newpos][1][::-1]:
-                temp_newpos = (2*captured_pos[0] - temp_pos[0],
-                               2*captured_pos[1] - temp_pos[1])
-                self.GFX.destroy_cue.append(self.board[captured_pos].piece_gfx)
-                motion = GFXMotion(piece_gfx, temp_pos, temp_newpos)
-                self.GFX.motion_cue.append(motion)
-                temp_pos = temp_newpos
 
         self.step(pos, newpos) # the player takes their step
         return 1

@@ -34,6 +34,15 @@ def draw():
     for piece in GFX.pieces:
         piece.draw()
 
+    py5.fill(255,0,0,128)
+    for pos in GFX.phantom_pieces:
+        py5.circle((pos[1]+1.5)*TILE_SIZE, 
+                   (pos[0]+1.5)*TILE_SIZE, 
+                   PIECE_SIZE)
+
+    if GFX.active_piece != None: 
+        py5.circle(GFX.active_piece.x, GFX.active_piece.y, PIECE_SIZE//2)
+
     if py5.has_thread('move'): return
 
     if GFX.in_motion:
@@ -56,9 +65,10 @@ def draw():
             GFX.in_motion = True
 
     if not GFX.in_motion:
-        if CAN_PROCEED and GAME_STATE != 0:
-            print(f"Current player: {GAME.turn}")
-            CAN_PROCEED = False
+        # if CAN_PROCEED and GAME_STATE != 0:
+        if GAME_STATE != 0:
+            # print(f"Current player: {GAME.turn}")
+            # CAN_PROCEED = False
             py5.launch_thread(GAME.move, name='move')
 
 def key_pressed(e):
@@ -68,9 +78,15 @@ def key_pressed(e):
     if pressed_key == py5.ENTER:
         CAN_PROCEED = True
 
+def mouse_clicked(e):
+    i = py5.mouse_y // TILE_SIZE - 1
+    j = py5.mouse_x // TILE_SIZE - 1
+    print(f"[{i}, {j}]")
+    GFX.clicked_pos = (i,j)
+
 
 if __name__ == "__main__":
-    GAME = game('bvb')
+    GAME = game('pvp')
     GFX = GAME.GFX
     GAME_STATE = 1
     GAME.update_all()
