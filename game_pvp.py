@@ -428,6 +428,7 @@ class game():
             newpos = (-1, -1)
             while not (newpos in mpiece.possible_steps):
                 newpos = self.GFX.clicked_pos
+                sleep(0.01)
             self.GFX.clicked_pos = (-1, -1)
 
             mpiece.make_step(newpos)
@@ -503,6 +504,11 @@ class game():
 
     def move(self):
         print(f"Current player: {self.turn}")
+        if len(self.can_move) == 0:
+            self.game_state = 0
+            print(f"GAME OVER \n {self.turn*(-1)} WINS")
+            return
+
         if self.mode == 'pvp':
             self.game_state = self.player_turn()
 

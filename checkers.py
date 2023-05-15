@@ -27,9 +27,30 @@ def setup():
 def draw():
     global CAN_PROCEED
 
-    if MENU.in_menu:
+    if MENU.state == "menu":
         MENU.draw()
         return
+    elif MENU.state == "end":
+        print("end")
+        py5.stroke_weight(2)
+        py5.fill(128)
+        py5.rect(GAME_WINDOW_SIZE//2, GAME_WINDOW_SIZE//2,
+                 200, 50)
+        py5.text_align(py5.CENTER)
+        py5.fill(0)
+        py5.text(f"{'Fehér' if GAME.turn == -1 else 'Fekete'} győz", 
+                 GAME_WINDOW_SIZE//2, GAME_WINDOW_SIZE//2,
+                 200, 50)
+        if py5.has_thread("wait"): pass
+        else:
+            surface = py5.get_surface()
+            surface.set_resizable(True)
+            surface.set_size(MENU.width, MENU.height)
+            surface.set_resizable(False)
+            MENU.state = "menu"
+            # MENU.state = "game"
+        return
+
 
     py5.stroke_weight(1)
     py5.stroke(0)
@@ -64,6 +85,9 @@ def draw():
     py5.stroke(0)
     py5.stroke_weight(1)
 
+    # GAME.turn *= -1
+    # GAME.game_state = 0
+
 
     if py5.has_thread('move'): return
     # if py5.has_thread('gfx_motion'): return
@@ -85,6 +109,7 @@ def draw():
             GFX.in_motion = False
         
     if not GFX.in_motion:
+        print(GAME.game_state)
         if len(GFX.motion_cue) > 0:
             GFX.current_motion = GFX.motion_cue.popleft()
             piece_gfx = GFX.current_motion.piece_gfx
@@ -99,6 +124,9 @@ def draw():
             # print(f"Current player: {GAME.turn}")
             # CAN_PROCEED = False
             py5.launch_thread(GAME.move, name='move')
+        else:
+            MENU.state = "end"
+            py5.launch_thread(waiting, name="wait")
 
 def key_pressed(e):
     global CAN_PROCEED
@@ -108,14 +136,14 @@ def key_pressed(e):
         CAN_PROCEED = True
 
 def mouse_clicked(e):
-    if MENU.in_menu:
+    if MENU.state == "menu":
         for name, box in MENU.boxes.items():
             if cursor_in_box(*box):
                 MENU.selected_mode = name
                 return
         if cursor_in_box(*MENU.start_box):
             global GAME, GFX
-            MENU.in_menu = False
+            MENU.state = "game"
 
             GAME = game(MENU.selected_mode)
             GFX = GAME.GFX
@@ -127,11 +155,15 @@ def mouse_clicked(e):
 
             GAME.update_all()
 
-    else: # ingame
+    elif MENU.state == "game": # ingame
         i = py5.mouse_y // TILE_SIZE - 1
         j = py5.mouse_x // TILE_SIZE - 1
         print(f"[{i}, {j}]")
         GFX.clicked_pos = (i,j)
+
+def waiting():
+    for i in range(30):
+        sleep(0.1)
 
 
 if __name__ == "__main__":

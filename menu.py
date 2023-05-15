@@ -2,7 +2,7 @@ import py5
 
 class Menu:
     def __init__(self):
-        self.in_menu = True
+        self.state = "menu"
 
         self.width = 300
         self.height = 300
