@@ -380,13 +380,16 @@ class game():
         if piece.can_take: forced_capture = True
         else: forced_capture = False
         
-        print(f"pieces to move: {self.can_move}")
+        # print(f"pieces to move: {self.can_move}")
         while True:
             pos = (-1,-1)
+            self.GFX.possible_choices = self.can_move
             while pos not in self.can_move:
-                print(f"{pos} waiting for pos, {self.can_move}")
+                # print(f"{pos} waiting for pos, {self.can_move}")
                 pos = self.GFX.clicked_pos
-                #print(f"pieces to move: {self.can_move}")
+                # print(f"pieces to move: {self.can_move}")
+                sleep(0.01)
+            self.GFX.possible_choices = []
             self.GFX.clicked_pos = (-1,-1)
             print(pos)
 
@@ -398,8 +401,9 @@ class game():
 
             newpos = (-1, -1)
             while newpos == (-1, -1):
-                print(f"{pos}, waiting for newpos")
+                # print(f"{pos}, waiting for newpos")
                 newpos = self.GFX.clicked_pos
+                sleep(0.01)
             self.GFX.clicked_pos = (-1, -1)
             print(f"{pos}, {newpos}")
 
@@ -488,7 +492,7 @@ class game():
             print(f"GAME OVER \n {self.turn*(-1)} WINS")
             print(self)
             return 0
-        
+
         print(self)
         pos, newpos = self.find_best_step(3)
         print(pos, newpos)
@@ -506,7 +510,7 @@ class game():
             print(f"Current player: {self.turn}")
             if self.turn == 1:
                 self.game_state = self.player_turn()
-            if self.turn == -1:
+            elif self.turn == -1:
                 self.game_state = self.bot_turn()
         
         elif self.mode == 'bvb':

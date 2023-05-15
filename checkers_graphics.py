@@ -38,6 +38,7 @@ class CheckersGraphics():
         self.clicked_pos: tuple[int,int] = (-1,-1)
         self.active_piece: PieceGFX = None
         self.phantom_pieces: list[tuple[int, int]] = list() 
+        self.possible_choices: list[tuple[int,int]] = list()
 
 class TileGFX:
     def __init__(self, x,y, color = (255,255,255)):
@@ -97,37 +98,37 @@ class GFXMotion:
         self.angle += 4
         return False
     
-    def animate(self):
-        GFX = self.piece_gfx.GFX
-        i = GFX.pieces.index(self.piece_gfx)
-        GFX.pieces[-1], GFX.pieces[i] = GFX.pieces[i], GFX.pieces[-1]
+    # def animate(self):
+    #     GFX = self.piece_gfx.GFX
+    #     i = GFX.pieces.index(self.piece_gfx)
+    #     GFX.pieces[-1], GFX.pieces[i] = GFX.pieces[i], GFX.pieces[-1]
 
-        delta = 0.1
-        # angle = 0
-        start_time = time()
-        last_time = start_time
-        # while angle < 180:
-        while last_time - start_time < 1:
-            newtime = time()
-            # if (90-delta <= angle < 90) and len(GFX.destroy_cue) > 0:
-            if ((last_time-start_time) <= 0.5 < (newtime - start_time)) and len(GFX.destroy_cue) > 0:
-                print("--- PIECE REMOVED ---")
-                piece_gfx = GFX.destroy_cue.popleft()
-                piece_gfx.destroy()
-                del piece_gfx
+    #     delta = 0.1
+    #     # angle = 0
+    #     start_time = time()
+    #     last_time = start_time
+    #     # while angle < 180:
+    #     while last_time - start_time < 1:
+    #         newtime = time()
+    #         # if (90-delta <= angle < 90) and len(GFX.destroy_cue) > 0:
+    #         if ((last_time-start_time) <= 0.5 < (newtime - start_time)) and len(GFX.destroy_cue) > 0:
+    #             print("--- PIECE REMOVED ---")
+    #             piece_gfx = GFX.destroy_cue.popleft()
+    #             piece_gfx.destroy()
+    #             del piece_gfx
 
-            # scale = (1 - py5.cos(py5.PI*angle/180)) / 2 
-            # angle = newtime - start_time
-            scale = (1 - py5.cos(py5.PI*(newtime-start_time))) / 2 
-            self.piece_gfx.x = scale*self.target[0] + (1-scale)*self.source[0]
-            self.piece_gfx.y = scale*self.target[1] + (1-scale)*self.source[1]
-            print(self.piece_gfx.x, self.piece_gfx.y)
-            last_time = newtime
-            # angle += delta
-            # sleep(0.0001)
+    #         # scale = (1 - py5.cos(py5.PI*angle/180)) / 2 
+    #         # angle = newtime - start_time
+    #         scale = (1 - py5.cos(py5.PI*(newtime-start_time))) / 2 
+    #         self.piece_gfx.x = scale*self.target[0] + (1-scale)*self.source[0]
+    #         self.piece_gfx.y = scale*self.target[1] + (1-scale)*self.source[1]
+    #         print(self.piece_gfx.x, self.piece_gfx.y)
+    #         last_time = newtime
+    #         # angle += delta
+    #         # sleep(0.0001)
 
-        self.piece_gfx.x = self.target[0]
-        self.piece_gfx.y = self.target[1]
+    #     self.piece_gfx.x = self.target[0]
+    #     self.piece_gfx.y = self.target[1]
 
 
     def __del__(self):

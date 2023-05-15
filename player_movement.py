@@ -12,9 +12,10 @@ class MovingPiece:
         self.possible_steps = []
         self.captured_poss = []
         self.forced_to_take = piece.can_take
+        self.crowned = self.piece.crowned
 
     def find_steps(self):
-        if self.piece.crowned: dirs = [(1,1), (1,-1), (-1,1), (-1,-1)]
+        if self.crowned: dirs = [(1,1), (1,-1), (-1,1), (-1,-1)]
         else: dirs = [(self.piece.col, 1), (self.piece.col, -1)]
 
         self.possible_steps = []
@@ -36,10 +37,21 @@ class MovingPiece:
 
     def make_step(self, newpos):
         # self.forced_to_move = True
+        if not self.piece.crowned:
+            if self.piece.col == 1: last_row = 7
+            else: last_row = 0
+
+            if newpos[0] == last_row: 
+                self.piece.crowned = True
+                create_crown = True
+            else: create_crown = False
+        else: create_crown = False
+
         motion = GFXMotion(self.piece.piece_gfx,
                            self.piece.pos,
-                           newpos)
-        # self.G.GFX.motion_cue.append(motion)
+                           newpos,
+                           create_crown)
+        self.G.GFX.motion_cue.append(motion)
         
         if self.forced_to_take:
             jump_pos = ((self.piece.pos[0] + newpos[0])//2,
@@ -47,13 +59,15 @@ class MovingPiece:
             self.G.GFX.destroy_cue.append(self.G.board[jump_pos].piece_gfx)
             self.G.board.pop(jump_pos)
 
-        while py5.has_thread('gfx_motion'):
-            pass
-        py5.launch_thread(motion.animate, 'gfx_motion')
+        # while py5.has_thread('gfx_motion'):
+        #     pass
+        # py5.launch_thread(motion.animate, 'gfx_motion')
 
         self.G.board.pop(self.piece.pos)
         self.piece.pos = newpos
         self.G.board[newpos] = self.piece
+
+        
 
 def valid_pos(pos, board): 
     if pos not in board: 
