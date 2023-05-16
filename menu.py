@@ -1,5 +1,5 @@
 import py5
-
+from checkers_graphics import *
 class Menu:
     def __init__(self):
         self.state = "menu"
@@ -18,6 +18,12 @@ class Menu:
         self.start_box = (self.width//2, 250, 100, 50)
         self.start_base_color = (200, 180, 70)
         self.start_hover_color = (240, 220, 110)
+
+        self.pause_boxes = {
+            "Szünet":    (200,130,150,50),
+            "Folytatás": (200,190,150,50),
+            "Kilépés":   (200,250,150,50)
+        }
         
 
     def draw(self):
@@ -50,16 +56,32 @@ class Menu:
                          box[0]+box[2]/4, box[1]-box[3]/4)
                 py5.stroke(0)
 
-        if cursor_in_box(*self.start_box): py5.fill(*self.start_hover_color)
-        else: py5.fill(*self.start_base_color)
-        py5.rect(*self.start_box)
-        py5.text_size(35)
-        py5.fill(0)
-        py5.text_align(py5.CENTER)
-        py5.text("Start", *self.start_box)
+        draw_box(self.start_box, self.start_base_color, 
+                 hover_color = self.start_hover_color,
+                 text="Start", text_size = 35)
+        # if cursor_in_box(*self.start_box): py5.fill(*self.start_hover_color)
+        # else: py5.fill(*self.start_base_color)
+        # py5.rect(*self.start_box)
+        # py5.text_size(35)
+        # py5.fill(0)
+        # py5.text_align(py5.CENTER)
+        # py5.text("Start", *self.start_box)
         
+    def draw_pause(self, gws):
+        py5.stroke_weight(2)
+        py5.fill(128)
+        py5.rect(200, 200,
+                 200, 200)
+        py5.text_align(py5.CENTER)
+        py5.fill(0)
 
-
-def cursor_in_box(x,y,w,h):
-    return (((x - w//2) <= py5.mouse_x <= (x + w//2)) and 
-            ((y - h//2) <= py5.mouse_y <= (y + h//2)))
+        for name, box in self.pause_boxes.items():
+            if name == "Szünet":
+                py5.stroke_weight(4)
+                py5.text(name, *box)
+                py5.stroke_weight(2)
+                continue
+            
+            draw_box(box, self.base_color, 
+                     hover_color = self.hover_color, 
+                     text=name, text_size=35)

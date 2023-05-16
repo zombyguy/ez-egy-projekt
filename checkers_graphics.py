@@ -40,6 +40,8 @@ class CheckersGraphics():
         self.phantom_pieces: list[tuple[int, int]] = list() 
         self.possible_choices: list[tuple[int,int]] = list()
 
+        self.pause_box = (GAME_WINDOW_SIZE-40, 15, 80, 30)
+
 class TileGFX:
     def __init__(self, x,y, color = (255,255,255)):
         self.x = x
@@ -134,6 +136,28 @@ class GFXMotion:
     def __del__(self):
         if self.creates_crown: 
             self.piece_gfx.crowned = True
+
+def draw_box(box: tuple[int, int, int, int], 
+            color: tuple,  
+            **kwargs):
+    
+    py5.fill(*color)
+    if "hover_color" in kwargs.keys():
+        if cursor_in_box(*box): py5.fill(*kwargs["hover_color"])
+    py5.rect(*box)
+
+    if "text_size" in kwargs.keys():
+        py5.text_size(kwargs["text_size"])
+
+    if "text" in kwargs.keys():
+        py5.text_align(py5.CENTER)
+        py5.fill(0)
+        py5.text(kwargs["text"], *box)
+
+def cursor_in_box(x,y,w,h):
+    return (((x - w//2) <= py5.mouse_x <= (x + w//2)) and 
+            ((y - h//2) <= py5.mouse_y <= (y + h//2)))
+
 
 # if __name__ == "__main__":
 #     GFX = CheckersGraphics()

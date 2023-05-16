@@ -12,7 +12,7 @@ from menu import *
 # P1_COLOR = (255, 255, 255)
 # P2_COLOR = (0,0,0)
 
-CAN_PROCEED = True
+# CAN_PROCEED = True
 GFX: CheckersGraphics = None
 GAME: game = None
 
@@ -25,22 +25,24 @@ def setup():
     # py5.background(128)
 
 def draw():
-    global CAN_PROCEED
-
     if MENU.state == "menu":
         MENU.draw()
         return
     elif MENU.state == "end":
-        print("end")
+        # print("end")
         py5.stroke_weight(2)
-        py5.fill(128)
-        py5.rect(GAME_WINDOW_SIZE//2, GAME_WINDOW_SIZE//2,
-                 200, 50)
-        py5.text_align(py5.CENTER)
-        py5.fill(0)
-        py5.text(f"{'Fehér' if GAME.turn == -1 else 'Fekete'} győz", 
-                 GAME_WINDOW_SIZE//2, GAME_WINDOW_SIZE//2,
-                 200, 50)
+        # py5.fill(128)
+        draw_box((GAME_WINDOW_SIZE//2, GAME_WINDOW_SIZE//2,200, 50),
+                 (128, ),
+                 text = f"{'Fehér' if GAME.turn == -1 else 'Fekete'} győz",
+                 text_size = 35)
+        # py5.rect(GAME_WINDOW_SIZE//2, GAME_WINDOW_SIZE//2,
+        #          200, 50)
+        # py5.text_align(py5.CENTER)
+        # py5.fill(0)
+        # py5.text(f"{'Fehér' if GAME.turn == -1 else 'Fekete'} győz", 
+        #          GAME_WINDOW_SIZE//2, GAME_WINDOW_SIZE//2,
+        #          200, 50)
         if py5.has_thread("wait"): pass
         else:
             surface = py5.get_surface()
@@ -50,7 +52,10 @@ def draw():
             MENU.state = "menu"
             # MENU.state = "game"
         return
-
+    
+    elif MENU.state == "pause":
+        MENU.draw_pause(GAME_WINDOW_SIZE)
+        return
 
     py5.stroke_weight(1)
     py5.stroke(0)
@@ -84,6 +89,10 @@ def draw():
                    PIECE_SIZE*0.5)
     py5.stroke(0)
     py5.stroke_weight(1)
+
+    draw_box(GFX.pause_box, (160,), 
+             hover_color = (200,),
+             text="Szünet", text_size=20)
 
     # GAME.turn *= -1
     # GAME.game_state = 0
@@ -154,8 +163,24 @@ def mouse_clicked(e):
             surface.set_resizable(False)
 
             GAME.update_all()
+    
+    elif MENU.state == "pause":
+        if cursor_in_box(*MENU.pause_boxes["Folytatás"]):      
+            MENU.state = "game"
+        elif cursor_in_box(*MENU.pause_boxes["Kilépés"]):
+            surface = py5.get_surface()
+            surface.set_resizable(True)
+            surface.set_size(MENU.width, MENU.height)
+            surface.set_resizable(False)
+            del GAME, GFX
+            MENU.state = "menu"
+        
 
     elif MENU.state == "game": # ingame
+        if cursor_in_box(*GFX.pause_box):
+            MENU.state = "pause"
+            return 
+        
         i = py5.mouse_y // TILE_SIZE - 1
         j = py5.mouse_x // TILE_SIZE - 1
         print(f"[{i}, {j}]")
