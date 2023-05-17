@@ -10,7 +10,6 @@ def is_valid(pos, board, start): ## a place is valid if its not occupied or off 
         return 0<=pos[0]<8 and 0<=pos[1]<8
     return False
 
-## pieces for the bot
 class Piece():
     def __init__(self, GFX, pos, col, crowned = False):
         self.col = col # color
@@ -144,7 +143,7 @@ class Piece():
         '''
         Checks if the piece can take someting from [pos] position given [board] boardstate in one of the [dirs] directions except for [prev_dir]
         This is used when checking for sequential takes, so the pos argument is not necessarily the same as self.pos
-        The piece obviously cant move back where it came from, because it just took a piece from that direction, but the taken piece is still on the board (because the step was not taken yet), so forbiding that direction is done by prev_dir
+        The piece can only take pieces that it didn't take before. - this is assured with already_taken
         '''
          ## can the piece take sg? - used for the depth search
         for direction in dirs:
@@ -365,7 +364,6 @@ class game():
         return best_list[c][0], best_list[c][1]
 
     def player_turn(self): ## this function takes input from the user and makes changes to the board based on it
-        ## obv the mode of input will be needed to be changed with the ui
         pos = '*'
         if len(self.can_move) == 0:
             print(f"GAME OVER \n {self.turn*(-1)} WINS")
