@@ -12,10 +12,10 @@ class MovingPiece:
         self.possible_steps = []
         self.captured_poss = []
         self.forced_to_take = piece.can_take
-        self.crowned = self.piece.crowned
+        # self.crowned = self.piece.crowned
 
     def find_steps(self):
-        if self.crowned: dirs = [(1,1), (1,-1), (-1,1), (-1,-1)]
+        if self.piece.crowned: dirs = [(1,1), (1,-1), (-1,1), (-1,-1)]
         else: dirs = [(self.piece.col, 1), (self.piece.col, -1)]
 
         self.possible_steps = []

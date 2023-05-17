@@ -92,6 +92,8 @@ class GFXMotion:
         if self.angle == 180: 
             self.piece_gfx.x = self.target[0]
             self.piece_gfx.y = self.target[1]
+            if self.creates_crown:
+                self.piece_gfx.crowned = True
             return True
 
         scale = (1 - py5.cos(py5.PI*self.angle/180)) / 2 

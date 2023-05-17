@@ -187,7 +187,7 @@ def mouse_clicked(e):
         GFX.clicked_pos = (i,j)
 
 def waiting():
-    for i in range(30):
+    for _ in range(30):
         sleep(0.1)
 
 
