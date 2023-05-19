@@ -1,4 +1,6 @@
+from checkers_graphics import *
 from random import randint
+from player_movement import MovingPiece
 
 def startcol(place):
     return (place[0]+place[1])%2*(-1) if place[0]>4 else (place[0]+place[1])%2
@@ -8,15 +10,25 @@ def is_valid(pos, board, start): ## a place is valid if its not occupied or off 
         return 0<=pos[0]<8 and 0<=pos[1]<8
     return False
 
-## pieces for the bot
 class Piece():
-    def __init__(self, pos, col, crowned = False):
+    def __init__(self, GFX, pos, col, crowned = False):
         self.col = col # color
         self.options = [] # available positions to move to
         self.det_opt = dict() # detailed options: {newpos:[value*, [pieces took], got_crowned, [path]]} * = #pieces took + I_{just got crowned} + 100*I_{won the game}
         self.crowned = crowned # if the piece is crowned
         self.can_take = False # can the piece take
         self.pos = pos # current position
+
+        self.GFX = GFX
+        self.piece_gfx = PieceGFX(
+            self.pos,
+            True if col == 1 else False,
+            self.crowned,
+            GFX
+        )
+
+    # def __del__(self):
+    #     self.piece_gfx.remove_from(self.GFX)
 
     def __str__(self):
         if not self.crowned:
@@ -131,7 +143,7 @@ class Piece():
         '''
         Checks if the piece can take someting from [pos] position given [board] boardstate in one of the [dirs] directions except for [prev_dir]
         This is used when checking for sequential takes, so the pos argument is not necessarily the same as self.pos
-        The piece obviously cant move back where it came from, because it just took a piece from that direction, but the taken piece is still on the board (because the step was not taken yet), so forbiding that direction is done by prev_dir
+        The piece can only take pieces that it didn't take before. - this is assured with already_taken
         '''
          ## can the piece take sg? - used for the depth search
         for direction in dirs:
@@ -161,11 +173,16 @@ class Piece():
                 self.det_opt[newpos][0]+=100
 
 class game():
-    def __init__(self):
-        self.board = {pos: Piece(pos, startcol(pos))
+    def __init__(self, mode='bvb'):
+        self.GFX = CheckersGraphics()
+        self.board = {pos: Piece(self.GFX, pos, startcol(pos))
                        for pos in [(i,j) for i in range(8) for j in range(8) if (i+j)%2==1 and (i<3 or i>4)]}
         self.turn = 1
         self.can_move = []
+        self.mode = mode
+
+        self.game_state = 1
+        self.update_all()
 
     def __str__(self): # its ugly af but it works
         return "\n".join([str([str(self.board[(i,j)]) if (i,j) in self.board.keys() else " 0" for j in range(8)]).replace("'", "").replace(",", "")
@@ -211,7 +228,7 @@ class game():
         for i in range(8):
             for j in range(8):
                 if board[i][j] != 0:
-                    self.board[(i,j)] = Piece((i,j), int(abs(board[i][j])/board[i][j]), abs(board[i][j])>1)
+                    self.board[(i,j)] = Piece(self.GFX, (i,j), int(abs(board[i][j])/board[i][j]), abs(board[i][j])>1)
 
         self.update_all()
 
@@ -233,12 +250,28 @@ class game():
         Then changes the turn to the other player and updates the pieces that can move
         '''
         ## taking an enemy piece
+
+        piece_gfx = self.board[pos].piece_gfx
+        if (len(self.board[pos].det_opt[newpos][1]) == 0):
+            motion = GFXMotion(piece_gfx, pos, newpos)
+            self.GFX.motion_cue.append(motion)
+        else:
+            temp_pos = pos
+            for captured_pos in self.board[pos].det_opt[newpos][1][::-1]:
+                temp_newpos = (2*captured_pos[0] - temp_pos[0],
+                               2*captured_pos[1] - temp_pos[1])
+                self.GFX.destroy_cue.append(self.board[captured_pos].piece_gfx)
+                motion = GFXMotion(piece_gfx, temp_pos, temp_newpos)
+                self.GFX.motion_cue.append(motion)
+                temp_pos = temp_newpos
+
         if self.board[pos].can_take:
             for enemy_pos in self.board[pos].det_opt[newpos][1]: # removing the piece that got taken
                 del self.board[enemy_pos]
 
             if self.board[pos].det_opt[newpos][2]: # crown if last row reached
                 self.board[pos].crowned = True
+                self.board[pos].piece_gfx.crowned = True
             
             if newpos!= pos: # so we can move in a circle
                 self.board[newpos] = self.board[pos] ### we move our piece in these 3 steps:
@@ -253,6 +286,7 @@ class game():
             del self.board[pos]###
             if (newpos[0] == 7 and self.board[newpos].col == 1) or (newpos[0] == 0 and self.board[newpos].col == -1): # crown if last row reached
                 self.board[newpos].crowned = True
+                self.board[newpos].piece_gfx.crowned = True
         self.turn = self.turn*(-1)
         self.update_all()
 
@@ -330,7 +364,6 @@ class game():
         return best_list[c][0], best_list[c][1]
 
     def player_turn(self): ## this function takes input from the user and makes changes to the board based on it
-        ## obv the mode of input will be needed to be changed with the ui
         pos = '*'
         if len(self.can_move) == 0:
             print(f"GAME OVER \n {self.turn*(-1)} WINS")
@@ -339,33 +372,116 @@ class game():
 
         print(self)
         print('---')
-        while True: # cycle ensuring that the player can retry their input
+        print(self.can_move)
+
+        piece = self.board[self.can_move[0]]
+        if piece.can_take: forced_capture = True
+        else: forced_capture = False
+        
+        # print(f"pieces to move: {self.can_move}")
+        while True:
+            pos = (-1,-1)
+            self.GFX.possible_choices = self.can_move
             while pos not in self.can_move:
-                print(f"pieces to move: {self.can_move}")
-                pos = tuple(int(i) for i in input()) ## currently takes input as a two digit number: e.g. 03 for (0,3)
+                # print(f"{pos} waiting for pos, {self.can_move}")
+                pos = self.GFX.clicked_pos
+                # print(f"pieces to move: {self.can_move}")
+                sleep(0.01)
+            self.GFX.possible_choices = []
+            self.GFX.clicked_pos = (-1,-1)
+            print(pos)
 
-                if pos == (9,9): #exit button
-                    return 0
+            mpiece = MovingPiece(self, self.board[pos])
+            mpiece.find_steps()
 
-            newpos = '*'
-            while newpos not in self.board[pos].options:
-                print(f"places to move to: {self.board[pos].options}")
-                print(self.board[pos].det_opt)
-                newpos = tuple(int(i) for i in input())
-                if newpos in self.can_move and newpos!=pos: ## you can re-enter another pos if you want to move another piece
-                    # pos = newpos ##                                 ## but only if its not a sequential take
-                    break ## newpos!=pos -- so you can move in a circle
+            self.GFX.phantom_pieces = mpiece.possible_steps
+            self.GFX.active_piece = mpiece.piece.piece_gfx
 
-                if newpos == (9,9): # exit button
-                    return 0
+            newpos = (-1, -1)
+            while newpos == (-1, -1):
+                # print(f"{pos}, waiting for newpos")
+                newpos = self.GFX.clicked_pos
+                sleep(0.01)
+            self.GFX.clicked_pos = (-1, -1)
+            print(f"{pos}, {newpos}")
 
-            if newpos in self.can_move and newpos!=pos: ## this makes so that you can enter the newpos for the changed pos
-                pos = newpos
-                continue## goes to asking for the newpos again bc pos = newpos as of now
+            self.GFX.phantom_pieces = []
+            self.GFX.active_piece = None
 
-            self.step(pos, newpos) # the player takes their step
-                
+            if newpos not in mpiece.possible_steps:
+                continue
+
+            mpiece.make_step(newpos)
+            if not forced_capture:
+                self.turn *= -1
+                self.update_all()
+                return 
             break
+        
+        mpiece.find_steps()
+        while len(mpiece.possible_steps) != 0:
+            self.GFX.phantom_pieces = mpiece.possible_steps
+            self.GFX.active_piece = mpiece.piece.piece_gfx
+
+            newpos = (-1, -1)
+            while not (newpos in mpiece.possible_steps):
+                newpos = self.GFX.clicked_pos
+                sleep(0.01)
+            self.GFX.clicked_pos = (-1, -1)
+
+            mpiece.make_step(newpos)
+            mpiece.find_steps()
+
+        self.turn *= -1
+        self.update_all()
+        
+        self.GFX.active_piece = None
+        self.GFX.phantom_pieces = []
+        return
+
+        # while True: # cycle ensuring that the player can retry their input
+        #     pos = (-1,-1)
+        #     while pos not in self.can_move:
+        #         pos = self.GFX.clicked_pos
+        #     self.GFX.clicked_pos = (-1, -1)
+            
+        #     self.GFX.active_piece = self.board[pos].piece_gfx
+        #     self.GFX.phantom_pieces = self.board[pos].options
+
+        #         # if pos == (9,9): #exit button
+        #         #     return 0
+
+        #     newpos = (-1, -1)
+        #     while newpos == (-1, -1):
+        #         newpos = self.GFX.clicked_pos
+        #     self.GFX.clicked_pos = (-1, -1)
+        
+        #     self.GFX.active_piece = None
+        #     self.GFX.phantom_pieces = []
+
+        #     if newpos not in self.board[pos].options:
+        #         print(f"pieces to move: {self.can_move}")
+        #         continue
+
+        #     # while newpos not in self.board[pos].options:
+        #     #     print(f"places to move to: {self.board[pos].options}")
+        #     #     print(self.board[pos].det_opt)
+        #     #     newpos = tuple(int(i) for i in input())
+        #     #     if newpos in self.can_move and newpos!=pos: ## you can re-enter another pos if you want to move another piece
+        #     #         # pos = newpos ##                                 ## but only if its not a sequential take
+        #     #         break ## newpos!=pos -- so you can move in a circle
+
+        #     #     if newpos == (9,9): # exit button
+        #     #         return 0
+
+        #     if newpos in self.can_move and newpos!=pos: ## this makes so that you can enter the newpos for the changed pos
+        #         pos = newpos
+        #         continue## goes to asking for the newpos again bc pos = newpos as of now
+
+        #     self.step(pos, newpos) # the player takes their step
+        #     print(f"pieces to move: {self.can_move}")
+
+        #     break
 
         return 1
 
@@ -375,35 +491,57 @@ class game():
             print(f"GAME OVER \n {self.turn*(-1)} WINS")
             print(self)
             return 0
-        
+
         print(self)
         pos, newpos = self.find_best_step(3)
         print(pos, newpos)
-        print('---')
+        print(self.board[pos].det_opt[newpos])
+
         self.step(pos, newpos) # the player takes their step
         return 1
 
-    def game_start_pvp(self): ## player vs player game
-        game_state = 1
-        self.update_all()
-        while game_state != 0:
-            print(f"Current player: {self.turn}")
-            game_state = self.player_turn()
+    def move(self):
+        print(f"Current player: {self.turn}")
+        if len(self.can_move) == 0:
+            self.game_state = 0
+            print(f"GAME OVER \n {self.turn*(-1)} WINS")
+            return
 
-    def game_start_pvb(self): ## player vs bot game
-        game_state = 1
-        self.update_all()
-        while game_state != 0:
+        if self.mode == 'pvp':
+            self.game_state = self.player_turn()
+
+        elif self.mode == 'pvb':
             print(f"Current player: {self.turn}")
             if self.turn == 1:
-                game_state = self.player_turn()
-            if self.turn == -1:
-                game_state = self.bot_turn()
-
-    def game_start_bvb(self): ## bot vs bot game ## toggle the prints in self.bot_turn() to spectate
-        game_state = 1
-        self.update_all()
-        while game_state != 0:
+                self.game_state = self.player_turn()
+            elif self.turn == -1:
+                self.game_state = self.bot_turn()
+        
+        elif self.mode == 'bvb':
             print(f"Current player: {self.turn}")
-            game_state = self.bot_turn()
+            self.game_state = self.bot_turn()
+
+    # def game_start_pvp(self): ## player vs player game
+    #     game_state = 1
+    #     self.update_all()
+    #     while game_state != 0:
+    #         print(f"Current player: {self.turn}")
+    #         game_state = self.player_turn()
+
+    # def game_start_pvb(self): ## player vs bot game
+    #     game_state = 1
+    #     self.update_all()
+    #     while game_state != 0:
+    #         print(f"Current player: {self.turn}")
+    #         if self.turn == 1:
+    #             game_state = self.player_turn()
+    #         if self.turn == -1:
+    #             game_state = self.bot_turn()
+
+    # def game_start_bvb(self): ## bot vs bot game ## toggle the prints in self.bot_turn() to spectate
+    #     game_state = 1
+    #     self.update_all()
+    #     while game_state != 0:
+    #         print(f"Current player: {self.turn}")
+    #         game_state = self.bot_turn()
             
