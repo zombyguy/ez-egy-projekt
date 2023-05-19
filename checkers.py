@@ -46,7 +46,7 @@ def draw():
         return
     
     elif MENU.state == "pause":
-        MENU.draw_pause(GAME_WINDOW_SIZE)
+        MENU.draw_pause()
         return
 
     py5.stroke_weight(1)
@@ -131,11 +131,11 @@ def draw():
             py5.launch_thread(waiting, name="wait")
 
 def key_pressed(e):
-    global CAN_PROCEED
+    # global CAN_PROCEED
     pressed_key = e.get_key()
-    if py5.has_thread('move'): return 
     if pressed_key == py5.ENTER:
-        CAN_PROCEED = True
+        take_screenshot()
+    if py5.has_thread('move'): return 
 
 def mouse_clicked(e):
     if MENU.state == "menu":
