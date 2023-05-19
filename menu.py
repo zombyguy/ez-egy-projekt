@@ -1,6 +1,9 @@
 import py5
 from checkers_graphics import *
 class Menu:
+    """
+    Object to manage manage UI outside the game itself. 
+    """
     def __init__(self):
         self.state = "menu"
 
@@ -27,6 +30,9 @@ class Menu:
         
 
     def draw(self):
+        """
+        Draws the main menu.
+        """
         py5.background(121,171,135)
         
         # py5.rect_mode(py5.CENTER)
@@ -67,7 +73,10 @@ class Menu:
         # py5.text_align(py5.CENTER)
         # py5.text("Start", *self.start_box)
         
-    def draw_pause(self, gws):
+    def draw_pause(self):
+        """
+        Draws the pause menu. 
+        """
         py5.stroke_weight(2)
         py5.fill(128)
         py5.rect(200, 200,

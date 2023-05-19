@@ -4,6 +4,10 @@ if TYPE_CHECKING:
     from game_pvp import game, Piece
 
 class MovingPiece:
+    """
+    Object to manage player movement and provide the
+    player with more detailed step options. 
+    """
     def __init__(self,
                  G: 'game',
                  piece: 'Piece'):
@@ -15,6 +19,10 @@ class MovingPiece:
         # self.crowned = self.piece.crowned
 
     def find_steps(self):
+        """
+        Looks around the piece to find the possible start
+        of movement sequences
+        """
         if self.piece.crowned: dirs = [(1,1), (1,-1), (-1,1), (-1,-1)]
         else: dirs = [(self.piece.col, 1), (self.piece.col, -1)]
 
@@ -35,7 +43,11 @@ class MovingPiece:
                 if (not (newpos in self.G.board)) and valid_pos(newpos, self.G.board):
                     self.possible_steps.append(newpos)
 
-    def make_step(self, newpos):
+    def make_step(self, newpos: tuple[int, int]):
+        """
+        Execute the corresponding step for the piece to newpos, and
+        create the neseccary graphics.
+        """
         # self.forced_to_move = True
         if not self.piece.crowned:
             if self.piece.col == 1: last_row = 7
@@ -67,9 +79,16 @@ class MovingPiece:
         self.piece.pos = newpos
         self.G.board[newpos] = self.piece
 
-        
+def valid_pos(pos: tuple[int, int], 
+              board: dict[tuple[int, int], 'Piece']): 
+    """
+    Checks whether pos is an unoccupied valid tile corrdinate.
 
-def valid_pos(pos, board): 
+    Input:
+        - pos: the tile coordinates.
+        - board: the current game board specified by the board 
+        parameter of the 'game' object  
+    """
     if pos not in board: 
         return 0<=pos[0]<8 and 0<=pos[1]<8
     return False

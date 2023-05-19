@@ -36,13 +36,6 @@ def draw():
                  (128, ),
                  text = f"{'Fehér' if GAME.turn == -1 else 'Fekete'} győz",
                  text_size = 35)
-        # py5.rect(GAME_WINDOW_SIZE//2, GAME_WINDOW_SIZE//2,
-        #          200, 50)
-        # py5.text_align(py5.CENTER)
-        # py5.fill(0)
-        # py5.text(f"{'Fehér' if GAME.turn == -1 else 'Fekete'} győz", 
-        #          GAME_WINDOW_SIZE//2, GAME_WINDOW_SIZE//2,
-        #          200, 50)
         if py5.has_thread("wait"): pass
         else:
             surface = py5.get_surface()
@@ -50,7 +43,6 @@ def draw():
             surface.set_size(MENU.width, MENU.height)
             surface.set_resizable(False)
             MENU.state = "menu"
-            # MENU.state = "game"
         return
     
     elif MENU.state == "pause":
@@ -64,9 +56,14 @@ def draw():
             py5.fill(*tile.color)
             py5.square(tile.x, tile.y, TILE_SIZE)
     
-    if GAME.turn == 1: py5.fill(255)
-    else: py5.fill(0)
-    py5.square(10, 10, 20)
+    if GAME.turn == 1: py5.fill(*P1_COLOR)
+    else: py5.fill(*P2_COLOR)
+    py5.square(135, 20, 20)
+    
+    py5.rect_mode(py5.CORNER); py5.text_align(py5.LEFT)
+    py5.fill(0); py5.text_size(23)
+    py5.text("Következik:", 10,5,120, 30)
+    py5.rect_mode(py5.CENTER); py5.text_align(py5.CENTER)
 
     for piece in GFX.pieces:
         piece.draw()
@@ -127,11 +124,7 @@ def draw():
             GFX.in_motion = True
         
         elif GAME.game_state != 0:
-    # if not GFX.in_motion:
-        # if CAN_PROCEED and GAME_STATE != 0:
-        # if GAME.game_state != 0:
-            # print(f"Current player: {GAME.turn}")
-            # CAN_PROCEED = False
+            # take_screenshot()
             py5.launch_thread(GAME.move, name='move')
         else:
             MENU.state = "end"
