@@ -188,6 +188,8 @@ class game():
 
     def __init__(self, mode='bvb'):
         self.GFX = CheckersGraphics()
+        self.kill_move_thread: list[bool, ] = [False, ]
+
         self.board = {pos: Piece(self.GFX, pos, startcol(pos))
                        for pos in [(i,j) for i in range(8) for j in range(8) if (i+j)%2==1 and (i<3 or i>4)]}
         self.turn = 1 ## values: -1, 1: which players turn is it
@@ -226,6 +228,7 @@ class game():
         Then lists all of those that can move into self.can_move
         '''
         for p in self.board.values():
+            if self.kill_move_thread[0]: return
             p.update(self.board)
 
         self.list_can_move()
@@ -310,6 +313,7 @@ class game():
         newgame = game() ### create a simulation where we make this step
         prev_game = self.export_boardstate()### export the game data from the current game
         newgame.import_boardstate(prev_game[0],prev_game[1])### import the data to the new game
+        newgame.kill_move_thread = self.kill_move_thread
         newgame.step(pos, newpos)### take the step
         return  newgame
 
@@ -327,6 +331,7 @@ class game():
         depth = 1 means that the player takes one step after the bot
         depth = n means that the player takes n moves and the bot n-1 other moves after this
         '''
+        if self.kill_move_thread[0]: return 0
         newgame = self.simulate_step(pos, newpos) # the bot took its step, now its the players turn in this simulation
         if newgame.can_move == []: ## if the player cant make another move
             return 100
@@ -338,12 +343,15 @@ class game():
 
         worst = 1000 ## the number of points the bot will lose if the player playes their best move (this value is minimized)
         for piece in newgame.can_move: ## check every piece of the player
+            sleep(0.001)
             for option in newgame.board[piece].options: # and their every move
+                if self.kill_move_thread[0]: return 0
                 new_newgame = newgame.simulate_step(piece, option) ## simulate that move
                 best = -1000 # the best score the bot can achieve in this situation (this value is maximized)
                 if new_newgame.can_move == []: ## if this the player can beat the bot in their next move
                     return -100
                 for pos2 in new_newgame.can_move: ## check the bots every piece to move
+                    if self.kill_move_thread[0]: return 0 
                     for newpos2 in new_newgame.board[pos2].options: # and their every option
                         best = max(best, new_newgame.evaluate_step(pos2, newpos2, depth-1))
                         # recursively asks for the score of the move and checks if it is the best yet
@@ -364,6 +372,7 @@ class game():
         best_list = []
         for pos in self.can_move: ## all pieces that can move
             for newpos in self.board[pos].options: ## and where they can move
+                if self.kill_move_thread[0]: return (0,0), (0,0)
                 x = self.evaluate_step(pos, newpos, depth) ### see the value of the step
                 if x>best:## if its better than everything until now it will be the only element of the best list
                     best = x
@@ -398,6 +407,7 @@ class game():
             pos = (-1,-1)
             self.GFX.possible_choices = self.can_move
             while pos not in self.can_move:
+                if self.kill_move_thread[0]: return
                 # print(f"{pos} waiting for pos, {self.can_move}")
                 pos = self.GFX.clicked_pos
                 # print(f"pieces to move: {self.can_move}")
@@ -414,6 +424,7 @@ class game():
 
             newpos = (-1, -1)
             while newpos == (-1, -1):
+                if self.kill_move_thread[0]: return
                 # print(f"{pos}, waiting for newpos")
                 newpos = self.GFX.clicked_pos
                 sleep(0.01)
@@ -440,6 +451,7 @@ class game():
 
             newpos = (-1, -1)
             while not (newpos in mpiece.possible_steps):
+                if self.kill_move_thread[0]: return
                 newpos = self.GFX.clicked_pos
                 sleep(0.01)
             self.GFX.clicked_pos = (-1, -1)
@@ -454,52 +466,6 @@ class game():
         self.GFX.phantom_pieces = []
         return
 
-        # while True: # cycle ensuring that the player can retry their input
-        #     pos = (-1,-1)
-        #     while pos not in self.can_move:
-        #         pos = self.GFX.clicked_pos
-        #     self.GFX.clicked_pos = (-1, -1)
-            
-        #     self.GFX.active_piece = self.board[pos].piece_gfx
-        #     self.GFX.phantom_pieces = self.board[pos].options
-
-        #         # if pos == (9,9): #exit button
-        #         #     return 0
-
-        #     newpos = (-1, -1)
-        #     while newpos == (-1, -1):
-        #         newpos = self.GFX.clicked_pos
-        #     self.GFX.clicked_pos = (-1, -1)
-        
-        #     self.GFX.active_piece = None
-        #     self.GFX.phantom_pieces = []
-
-        #     if newpos not in self.board[pos].options:
-        #         print(f"pieces to move: {self.can_move}")
-        #         continue
-
-        #     # while newpos not in self.board[pos].options:
-        #     #     print(f"places to move to: {self.board[pos].options}")
-        #     #     print(self.board[pos].det_opt)
-        #     #     newpos = tuple(int(i) for i in input())
-        #     #     if newpos in self.can_move and newpos!=pos: ## you can re-enter another pos if you want to move another piece
-        #     #         # pos = newpos ##                                 ## but only if its not a sequential take
-        #     #         break ## newpos!=pos -- so you can move in a circle
-
-        #     #     if newpos == (9,9): # exit button
-        #     #         return 0
-
-        #     if newpos in self.can_move and newpos!=pos: ## this makes so that you can enter the newpos for the changed pos
-        #         pos = newpos
-        #         continue## goes to asking for the newpos again bc pos = newpos as of now
-
-        #     self.step(pos, newpos) # the player takes their step
-        #     print(f"pieces to move: {self.can_move}")
-
-        #     break
-
-        return 1
-
     def bot_turn(self):
         '''
         This function searches for the best step to take and the moves the bot accordingly
@@ -513,54 +479,55 @@ class game():
 
         print(self)
         pos, newpos = self.find_best_step(3)
+        if self.kill_move_thread[0]: return 1
         print(pos, newpos)
         print(self.board[pos].det_opt[newpos])
 
         self.step(pos, newpos) # the player takes their step
         return 1
 
-    # def move(self):
-    #     print(f"Current player: {self.turn}")
-    #     if len(self.can_move) == 0:
-    #         self.game_state = 0
-    #         print(f"GAME OVER \n {self.turn*(-1)} WINS")
-    #         return
+    def move(self):
+        print(f"Current player: {self.turn}")
+        if len(self.can_move) == 0:
+            self.game_state = 0
+            print(f"GAME OVER \n {self.turn*(-1)} WINS")
+            return
 
-    #     if self.mode == 'pvp':
-    #         self.game_state = self.player_turn()
+        if self.mode == 'pvp':
+            self.game_state = self.player_turn()
 
-    #     elif self.mode == 'pvb':
-    #         print(f"Current player: {self.turn}")
-    #         if self.turn == 1:
-    #             self.game_state = self.player_turn()
-    #         elif self.turn == -1:
-    #             self.game_state = self.bot_turn()
+        elif self.mode == 'pvb':
+            print(f"Current player: {self.turn}")
+            if self.turn == 1:
+                self.game_state = self.player_turn()
+            elif self.turn == -1:
+                self.game_state = self.bot_turn()
         
-    #     elif self.mode == 'bvb':
-    #         print(f"Current player: {self.turn}")
-    #         self.game_state = self.bot_turn()
+        elif self.mode == 'bvb':
+            print(f"Current player: {self.turn}")
+            self.game_state = self.bot_turn()
 
-    # def game_start_pvp(self): ## player vs player game
-    #     game_state = 1
-    #     self.update_all()
-    #     while game_state != 0:
-    #         print(f"Current player: {self.turn}")
-    #         game_state = self.player_turn()
+    def game_start_pvp(self): ## player vs player game
+        game_state = 1
+        self.update_all()
+        while game_state != 0:
+            print(f"Current player: {self.turn}")
+            game_state = self.player_turn()
 
-    # def game_start_pvb(self): ## player vs bot game
-    #     game_state = 1
-    #     self.update_all()
-    #     while game_state != 0:
-    #         print(f"Current player: {self.turn}")
-    #         if self.turn == 1:
-    #             game_state = self.player_turn()
-    #         if self.turn == -1:
-    #             game_state = self.bot_turn()
+    def game_start_pvb(self): ## player vs bot game
+        game_state = 1
+        self.update_all()
+        while game_state != 0:
+            print(f"Current player: {self.turn}")
+            if self.turn == 1:
+                game_state = self.player_turn()
+            if self.turn == -1:
+                game_state = self.bot_turn()
 
-    # def game_start_bvb(self): ## bot vs bot game ## toggle the prints in self.bot_turn() to spectate
-    #     game_state = 1
-    #     self.update_all()
-    #     while game_state != 0:
-    #         print(f"Current player: {self.turn}")
-    #         game_state = self.bot_turn()
+    def game_start_bvb(self): ## bot vs bot game ## toggle the prints in self.bot_turn() to spectate
+        game_state = 1
+        self.update_all()
+        while game_state != 0:
+            print(f"Current player: {self.turn}")
+            game_state = self.bot_turn()
             

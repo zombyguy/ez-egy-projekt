@@ -161,6 +161,10 @@ def mouse_clicked(e):
         if cursor_in_box(*MENU.pause_boxes["Folytatás"]):      
             MENU.state = "game"
         elif cursor_in_box(*MENU.pause_boxes["Kilépés"]):
+            GAME.kill_move_thread[0] = True
+            while py5.has_thread("move"):
+                sleep(0.01)
+
             surface = py5.get_surface()
             surface.set_resizable(True)
             surface.set_size(MENU.width, MENU.height)
