@@ -1,7 +1,13 @@
 # ez-egy-projekt
-Ez egy projekt
 
 Megj: Valóban, ez egy projekt
+
+A projekt során egy egyszerű dámajátékot valósítottunk meg, melyben egy játékos játszat egy másik, vagy akár a számítógép ellen. A játék implementációja a klasszikus szabályokon alapszik, azaz van ütéskényszer, ami az ütéssorozatra is vonatkozik.
+
+A projektet készítették:
+- Novák Benedek Bálint
+- Rózsay Domonkos
+- Sándor Zsombor 
 
 ## Előfeltételek
 
@@ -39,7 +45,7 @@ Itt a bal felső sarokban azt látjuk, hogy éppen melyik játékos van soron (a
 <img width=200 src="./readme_pictures/pause_menu.jpg">
 </p>
 
-A "Folytatás" gombbal visszatérhetünk a játékba, míg a "Kilépés" gombbal befejezhetjük a játékot a menübe lépve. A játék egy általános állapota a következőképp nézhet ki, itt a piros pöttyel megjelölt bábuk a dámák.
+A "Folytatás" gombbal visszatérhetünk a játékba, míg a "Kilépés" gombbal befejezhetjük a játékot a menübe lépve. A játék egy általános állapota a következőképp nézhet ki például; itt a piros pöttyel megjelölt bábuk a dámák.
 
 <p align="center">
 <img width=200 src="./readme_pictures/generic.jpg">
@@ -52,7 +58,7 @@ Amennyiben az egyik játékosnak elfogynak a lépési lehetőségei, veszít. Ek
 </p>
 
 ## Játékos lépése
-Amikor játékoson van a sor, a játék megjelöli azon bábukat, melyekkel tud lépni. Ezt az ütéskényszer figyelembevételével teszi. A bábura kattintva a játék felajánlja a lépési lehetőségeket. Amennyiben nem egy lehetőségre kattintunk, megszakítjuk a bábu lépését, azaz újra választhatunk a mozogni képes bábuk közül.
+Amikor játékoson van a sor, a játék megjelöli azon bábukat, melyekkel tud lépni. Ezt az ütéskényszer figyelembevételével teszi. A bábura kattintva a játék felajánlja a lépési lehetőségeket. Ha nem egy lehetőségre kattintunk, megszakítjuk a bábu lépését, azaz újra választhatunk a mozogni képes bábuk közül.
 
 <p align="center">
 <img width=200 src="./readme_pictures/movement%20options.jpg">
@@ -76,7 +82,7 @@ A bot döntését az alapján hozza, hogy végignézi saját és ellenfele lehet
 - játék megnyerése: +100 pont
 - játék elvesztése: -100 pont
 
-A lépéssorozatokat a bot rekurzív módon értékeli ki, olyan módon, hogy mindkét játékos ezen pontozás szerint a lehető legoptimálisabban próbál lépni. Ez alapján választja ki saját lépését. A bot működését demostrálja a következő bot vs. bot játék:
+A lépéssorozatokat a bot rekurzívan értékeli ki, olyan módon, hogy mindkét játékos ezen pontozás szerint a lehető legoptimálisabban próbálja léptetni. Ez alapján választja ki saját lépését. A bot működését demostrálja a következő bot vs. bot játék:
 <p align="center">
 <img width=200 src="./readme_pictures/example_bot_run.gif">
 </p>
