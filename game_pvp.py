@@ -205,7 +205,7 @@ class game():
     
     def list_can_move(self):
         '''
-        Lists all the pieces the current player can move: Refreshes the self.can_move list
+        Lists all the pieces the current player can move by refreshing the self.can_move list
         '''
 
         self.can_move = []
@@ -264,6 +264,11 @@ class game():
         The piece also gets crowned if it reached the last row in the process.
 
         Then changes the turn to the other player and updates the pieces that can move
+
+        Game loop:
+            calls self.move() that acts based on what the type of the current player is:
+                if it is a player, then it takes an input, then updates the board
+                if it is a bot, then it calculates an optimal step, takes it and then updates the board
         '''
 
         ## the part responsibe for the graphics
@@ -506,28 +511,3 @@ class game():
         elif self.mode == 'bvb':
             print(f"Current player: {self.turn}")
             self.game_state = self.bot_turn()
-
-    def game_start_pvp(self): ## player vs player game
-        game_state = 1
-        self.update_all()
-        while game_state != 0:
-            print(f"Current player: {self.turn}")
-            game_state = self.player_turn()
-
-    def game_start_pvb(self): ## player vs bot game
-        game_state = 1
-        self.update_all()
-        while game_state != 0:
-            print(f"Current player: {self.turn}")
-            if self.turn == 1:
-                game_state = self.player_turn()
-            if self.turn == -1:
-                game_state = self.bot_turn()
-
-    def game_start_bvb(self): ## bot vs bot game ## toggle the prints in self.bot_turn() to spectate
-        game_state = 1
-        self.update_all()
-        while game_state != 0:
-            print(f"Current player: {self.turn}")
-            game_state = self.bot_turn()
-            
