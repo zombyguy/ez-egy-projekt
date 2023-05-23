@@ -12,10 +12,27 @@ def is_valid(pos, board, start): ## a place is valid if its not occupied or off 
 
 class Piece():
     '''
-    Used for the pieces on the board.
-    Its attributes are listed and described under self.__init__()
-    Its main function is self.update that updates these attributes
-    The other functions are used as subroutines of this self.update
+    Represents a piece on the board.
+
+    Attributes:
+        GFX: Graphics object.
+        pos (tuple): Current position of the piece.
+        col (int): Color of the piece (-1 for black, 1 for white).
+        crowned (bool): Indicates if the piece is crowned.
+        options (list): Available positions to move to.
+        det_opt (dict): Detailed options for each move.
+        can_take (bool): Indicates if the piece can take another piece.
+        piece_gfx: Graphics object for the piece.
+
+    Methods:
+        __init__: Initializes a new piece object.
+        __str__: Returns a string representation of the piece.
+        update: Updates the attributes of the piece.
+        check_take: Checks if the piece can take in a given direction.
+        no_take: Lists all the free positions in a given direction.
+        can_take_more: Checks if the piece can take additional pieces.
+        crowned_bonus: Gives bonus points for crowning a piece.
+        game_end_bonus: Gives bonus points for winning the game.
     '''
 
     def __init__(self, GFX, pos, col, crowned = False):
@@ -181,9 +198,24 @@ class Piece():
 
 class game():
     '''
-    The main object of the game.
-    Stores the board in a dictionary with the position of each piece as its key and the piece object as the value
-    The other variables are decribed under self.__init__()
+    Represents the main object of the game.
+
+    Attributes:
+        GFX: Graphics object.
+        kill_move_thread (list): Flag for terminating the move thread.
+        board (dict): Dictionary representing the board state.
+        turn (int): Current player's turn (-1 for black, 1 for white).
+        can_move (list): List of pieces that can move in the current turn.
+        mode (str): Game mode ('bvb' for player vs. bot, 'pvp' for player vs. player).
+
+    Methods:
+        __init__: Initializes a new game object.
+        __str__: Returns a string representation of the board state.
+        list_can_move: Lists all the pieces the current player can move.
+        update_all: Updates the attributes of all the pieces.
+        import_boardstate: Starts the game from a custom board state.
+        export_boardstate: Exports the current game state.
+        step: Moves a piece to a new position and updates the board.
     '''
 
     def __init__(self, mode='bvb'):
