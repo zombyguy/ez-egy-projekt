@@ -322,7 +322,176 @@ class game():
         newgame.step(pos, newpos)### take the step
         return  newgame
 
-    def evaluate_step(self, pos, newpos, depth):
+###########################################################################################
+# Itt volt változtatás
+
+    def evaluate_game_state(self):
+      """
+      Evaluate the current state of the checkers game and return a score.
+
+      Returns:
+           int: The score representing the desirability of the current game state.
+      """
+      mode = self.mode
+      score=0
+      pieces = [0,0] # Number of pieces
+      kings  = [0,0] # Number of kings
+      for piece in self.board:
+        if (self.board[piece].pos[0]>1 and self.board[piece].pos[0]<6 and 
+            self.board[piece].pos[1]>1 and self.board[piece].pos[1]<6):
+          #  If the piece is in the middle 4x4 part
+          score+= self.board[piece].col*0.4
+        if self.board[piece].col == 1:
+          pieces[0] += 1
+          if self.board[piece].crowned:
+            kings[0] +=1
+        elif self.board[piece].col==-1:
+          pieces[1] += 1
+          if self.board[piece].crowned:
+            kings[1] +=1
+            
+
+      if mode == 'basic':
+      # Return the difference in the number of pieces as the score
+        score = pieces[0]-pieces[1]
+      if mode == 'basic_plus':
+      # Return the difference in the number of pieces and kings as the score
+        score = pieces[0]-pieces[1]+kings[0]-kings[1]
+      if mode == 'medium':
+      # Return the difference in the number of pieces and kings with weight as the score
+        score = pieces[0]-pieces[1]+2.5*(kings[0]-kings[1])
+      if mode == 'medium_plus':  # score doesnt reset to 0
+      # Return the difference in the number of pieces and kings with weight plus centre as the score
+        score+= pieces[0]-pieces[1]+2.5*(kings[0]-kings[1])
+      return score
+
+
+    def alpha_beta(self, depth, alpha, beta, maximizing_player):
+      """
+        Calculate the value of a step based on the game state and search for the best possible answers
+        using (soft) alpha-beta pruning algorithm.
+
+        Args:
+            depth (int): The depth of the search tree (number of moves to look ahead).
+            alpha (float): The best value that the maximizing player can guarantee.
+            beta (float): The best value that the minimizing player can guarantee.
+            maximizing_player (bool): True if the evaluating player is the maximizing player, False otherwise.
+        Output:
+      """
+      score = self.evaluate_game_state()
+      #print(depth, score)
+      #return 0, 0, score
+      if True:  #  depth > 0
+            if maximizing_player:
+                max_value = -float("inf")
+                best_pos = None
+                best_action = None
+                for pos in self.can_move:                          # Pieces' initial positions
+                    for newpos in self.board[pos].options:         # Piece's possible positions
+                        sim_game = self.simulate_step(pos, newpos)
+
+                        if sim_game.can_move == []:
+                            step_value = float("inf")
+                        elif depth == 0:
+                          return 0, 0, self.board[pos].det_opt[newpos][0] - max(
+                                        [max([option[0] for option in self.board[piece].det_opt.values()]) for piece in self.can_move])
+                        else:
+                            _, _, step_value = self.alpha_beta(depth - 1, alpha, beta, False)
+                        if(step_value is None):
+                            print("continue")
+                            continue
+                        #print(f"recursion, max->, depth={depth}, step_value={step_value}, pos={pos}, newpos={newpos}, self.turn={self.turn}")
+                        if step_value > max_value:
+                            #print("Nagyobb elérve ",step_value, newpos)
+                            max_value = step_value
+                            best_pos = pos
+                            best_action = newpos
+#                        elif step_value == max_value and random.random() <= 0.1:
+#                            #print("Veletlen", newpos)
+ #                           max_value = step_value
+ #                           best_pos = pos
+  #                          best_action = newpos
+                        if(step_value == -float("inf") and best_pos is  None):
+                            print("Valami fura dolog MAX")
+                            best_pos = pos
+                            best_action = newpos
+                        alpha = max(alpha, max_value)
+                        #print("beta= ", beta, " alpha= ", alpha)
+                        if beta <= max_value:
+                            #print('beta cutoff_1')
+                            break
+                    if beta <= max_value:
+                        #print('beta cutoff')
+                        break
+                #print(best_pos, best_action, max_value)
+                return best_pos, best_action, max_value
+            else:
+                min_value = float("inf")
+                best_pos = None
+                best_action = None
+                for pos in self.can_move:                          # Pieces' initial positions
+                    for newpos in self.board[pos].options:         # Piece's possible positions
+                        sim_game = self.simulate_step(pos, newpos)
+                        if sim_game.can_move == []:
+                            step_value = -float("inf")
+                        elif depth == 0:
+                          return 0, 0, self.board[pos].det_opt[newpos][0] - max(
+                                        [max([option[0] for option in self.board[piece].det_opt.values()]) for piece in self.can_move])
+                        else:
+                            _, _, step_value = self.alpha_beta( depth - 1, alpha, beta, True )
+                        if(step_value is None):
+                            print("continue")
+                            continue
+                        if step_value < min_value:
+                            #print("Kisebb elérve ",step_value, newpos)
+                            min_value = step_value
+                            best_pos = pos
+                            best_action = newpos
+#                        elif step_value == min_value and random.random() <= 0.1:
+##                            #print("Veletlen", newpos)
+#                            min_value = step_value
+ #                           best_pos = pos
+ #                           best_action = newpos
+                        #print(f"min->, depth={depth}, step_value={step_value}, pos={pos}, newpos={newpos}, self.turn={self.turn}")
+                        if(step_value == float("inf") and best_pos is  None):
+                            print("Valami fura dolog MIN")
+                            best_pos = pos
+                            best_action = newpos
+                        beta = min(beta, min_value)
+                        #print("beta= ", beta, " alpha= ", alpha)
+                        if min_value <= alpha:
+                            #print('alpha cutoff_1')
+                            break
+                    if min_value <= alpha:
+                        #print('alpha cutoff')
+                        break
+                #print(best_pos, best_action, min_value)
+                return best_pos, best_action, min_value
+      print("Valami hiba van itt")
+      return 0
+
+    def find_best_step(self):
+      depth = 3
+      if len(self.board)<24:
+        depth=4
+      if len(self.board)<10:
+        depth=5
+      if len(self.board)<6:
+        depth=5
+      
+      if self.turn == 1:
+          maximizing_player = True
+      else: maximizing_player = False
+      print(maximizing_player)
+      random_move, random_choice, score = self.alpha_beta(depth, -float('inf'), float('inf'), maximizing_player)
+      print('score= ', score)
+      return random_move, random_choice, 0
+
+###########################################################################################    
+    
+    
+    
+    def evaluate_step_bobo(self, pos, newpos, depth):
         '''
         This function calcualtes the value of a (pos -> newpos) step based on the following:
         +1 for taking a piece
@@ -365,7 +534,7 @@ class game():
 
         return self.board[pos].det_opt[newpos][0] + worst
 
-    def find_best_step(self, depth):
+    def find_best_step_bobo(self, depth):
         '''
         in: depth: how far should it search
         out: suggested step: pos, newpos
@@ -471,7 +640,7 @@ class game():
         self.GFX.phantom_pieces = []
         return
 
-    def bot_turn(self):
+    def bot_turn_bobo(self):
         '''
         This function searches for the best step to take and the moves the bot accordingly
         '''
@@ -491,6 +660,28 @@ class game():
         self.step(pos, newpos) # the player takes their step
         return 1
 
+
+    def bot_turn_bobo(self):
+        '''
+        This function searches for the best step to take and the moves the bot accordingly
+        '''
+
+        pos = '*'
+        if len(self.can_move) == 0:
+            print(f"GAME OVER \n {self.turn*(-1)} WINS")
+            print(self)
+            return 0
+
+        print(self)
+        pos, newpos, _ = self.find_best_step()
+        if self.kill_move_thread[0]: return 1
+        print(pos, newpos)
+        print(self.board[pos].det_opt[newpos])
+
+        self.step(pos, newpos) # the player takes their step
+        return 1    
+    
+    
     def move(self):
         print(f"Current player: {self.turn}")
         if len(self.can_move) == 0:
