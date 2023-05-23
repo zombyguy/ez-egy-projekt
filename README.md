@@ -76,9 +76,9 @@ Amennyiben lépésként kiválasztunk egy ütést, ütéssorozat indul meg. Itt 
 A bot döntését az alapján hozza, hogy végignézi saját és ellenfele lehetőségeit 3-3 lépéssel előre. Egyes lépések kiértékelése a kövekező módon történik:
 
 - ütés: +1 pont
-- dáma létrehozása: +1 pont 
+- dáma létrehozása: +1.5 pont 
 - ellenfél üt: -1 pont
-- ellenfél hoz létre dámát: -1 pont
+- ellenfél hoz létre dámát: -1.5 pont
 - játék megnyerése: +100 pont
 - játék elvesztése: -100 pont
 
