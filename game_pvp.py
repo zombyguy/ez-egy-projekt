@@ -164,11 +164,11 @@ class Piece():
 
     def crowned_bonus(self):
         '''
-        gives extra points for moves that give the piece a crown
+        gives an extra 1.5 points for moves that give the piece a crown
         '''
         for newpos in self.options:
             if not self.crowned and self.det_opt[newpos][2]: ## in not yet crowned and it gets crowned during moving
-                self.det_opt[newpos][0]+=1 # extra point
+                self.det_opt[newpos][0]+=1.5 # extra point
 
     def game_end_bonus(self, board):
         '''
