@@ -164,7 +164,7 @@ class Piece():
 
     def crowned_bonus(self):
         '''
-        gives an extra 1.5 points for moves that give the piece a crown
+        Gives an extra 1.5 points for moves that give the piece a crown
         '''
         for newpos in self.options:
             if not self.crowned and self.det_opt[newpos][2]: ## in not yet crowned and it gets crowned during moving
@@ -326,8 +326,8 @@ class game():
         '''
         This function calcualtes the value of a (pos -> newpos) step based on the following:
         +1 for taking a piece
-        +2 for taking a queen
-        +1 for transforming into a queen
+        +2.5 for taking a queen
+        +1.5 for transforming into a queen
         +100 for winning the game
         (these values are calculated for each single step while calling the check_take function)
         Then it searches for the best possible answers of the player (who is the opponent of the bot using the algorithm)
@@ -392,7 +392,7 @@ class game():
 
     def player_turn(self):
         '''
-        this function takes input from the user and makes changes to the board based on it while making the necessary changes on the UI
+        This function takes input from the user and makes changes to the board based on it while making the necessary changes on the UI
         '''
         pos = '*'
         if len(self.can_move) == 0:
