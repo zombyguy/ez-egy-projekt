@@ -129,7 +129,7 @@ class Piece():
                 if not self.can_take_more(board, newpos, dirs, start, already_taken_new): ## if the piece cant take more
                     self.det_opt[newpos] = [1, [(newpos[0]-direction[0], newpos[1]-direction[1])], False, [newpos]] ## this is the last piece we will take
                     if board[(newpos[0]-direction[0], newpos[1]-direction[1])].crowned: # extra point if the taken piece was crowned
-                        self.det_opt[newpos][0]+=1
+                        self.det_opt[newpos][0]+=1.5
                         
                     self.det_opt[newpos][2] = ((newpos[0]==0 and self.col == -1) or (newpos[0]==7 and self.col == 1)) ## check if it gets crowned
                     return {newpos} ## returns it as a set so it can be added later
@@ -143,7 +143,7 @@ class Piece():
                             self.det_opt[fin][3].append(newpos)## expands the list of visited places
                             self.det_opt[fin][1].append((newpos[0]-direction[0], newpos[1]-direction[1]))## expands the list of the taken pieces
                             if board[(newpos[0]-direction[0], newpos[1]-direction[1])].crowned: # extra point if the taken piece was crowned
-                                self.det_opt[fin][0]+=1
+                                self.det_opt[fin][0]+=1.5
 
                             if (newpos[0]==0 and self.col == -1) or (newpos[0]==7 and self.col == 1):
                                 self.det_opt[fin][2]=True ## Check if the moving piece got crowned
