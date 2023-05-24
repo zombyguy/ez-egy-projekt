@@ -198,7 +198,7 @@ class Piece():
 
 class game():
     '''
-    Represents the main object of the game.
+    The main object of the game.
 
     Attributes:
         GFX: Graphics object.
@@ -218,19 +218,14 @@ class game():
         step: Moves a piece to a new position and updates the board.
         simulate_step(pos, newpos):
             This function is used to create a simulation game with the step taken.
-
         evaluate_step(pos, newpos, depth):
             This function calculates the value of a (pos -> newpos) step based on the game state and depth.
-        
         find_best_step(depth):
             Finds the best possible step given the board state and returns it.
-        
         player_turn():
             Takes input from the user and makes changes to the board based on it.
-        
         bot_turn():
             Searches for the best step to take and then moves the bot accordingly.
-
         move():
             Executes a move in the game based on the current player and mode.
 
